@@ -13,8 +13,8 @@ f = @(t,x)sqrt(theta/(2*pi*D*(1-exp(-2*theta*t))))*exp(-theta/(2*D)*...
 
 % grid
 Lx = 10;
-nx = 101; N = ceil(nx/2)-1;
-x = linspace(-Lx/2,Lx/2,nx)';
+nx = 100;
+x = linspace(-Lx/2,Lx/2-Lx/nx,nx)';
 Lt = 5;
 nt = 20;
 t = linspace(Lt/nt,Lt,nt);
@@ -30,23 +30,33 @@ ytrue = zeros(nx,nt);
 for i = 1:nt
     ytrue(:,i) = fftshift(fft(fx(:,i)))/nx;
 end
-if mod(nx,2) == 0
-    ytrue(1,:) = [];
-end
+
+% fft of f(x) = x
+y_x = fftshift(fft(x))/nx;
 
 % propagation
 y(:,1) = ytrue(:,1);
-A = zeros(2*N+1,2*N+1);
-for i = 1:2*N+1
-    I = i-1-N;
-    for j = 1:2*N+1
-        J = j-1-N;
-        K = wrapToN(I-J,N);
-        k = K+1+N;
-        if J == 0
-            A(i,k) = -2*sigma^2*pi^2*I^2/Lx^2-miu*theta*2*pi*1i*I/Lx;
+A = zeros(nx,nx);
+for n = 1:nx
+    N = n-1-floor(nx/2);
+    for k = 1:nx
+        K = k-1-floor(nx/2);
+        NMinusK = wrapDFT(N-K,nx);
+        nMinusk = NMinusK+1+floor(nx/2);
+        
+        if n == 1 && mod(nx,2) == 0
+            if K == 0
+                A(n,nMinusk) = -2*sigma^2*pi^2*N^2/Lx^2;
+            else
+                A(n,nMinusk) = 0;
+            end
         else
-            A(i,k) = -theta*I/J;
+            if K == 0
+                A(n,nMinusk) = -theta*miu*2*pi*1i*N/Lx + theta*2*pi*1i*N/Lx*y_x(k)...
+                    -2*sigma^2*pi^2*N^2/Lx^2;
+            else
+                A(n,nMinusk) = theta*2*pi*1i*N/Lx*y_x(k);
+            end
         end
     end
 end
@@ -56,7 +66,7 @@ for i = 2:nt
 end
 
 % reconstruct density
-freq = (-N:N)/Lx*2*N/(2*N+1);
+freq = ((0:n-1)-floor(n/2))/Lx;
 f_fft = @(x,y)real(sum(y.'.*exp(1i*freq*2*pi.*x),2));
 
 % plot
