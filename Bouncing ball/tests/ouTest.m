@@ -66,7 +66,7 @@ for i = 2:nt
 end
 
 % reconstruct density
-freq = ((0:n-1)-floor(n/2))/Lx;
+freq = ((0:nx-1)-floor(nx/2))/Lx;
 f_fft = @(x,y)real(sum(y.'.*exp(1i*freq*2*pi.*x),2));
 
 % plot

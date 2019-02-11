@@ -2,17 +2,17 @@ clear;
 close all;
 
 % geometric Brownian motion parameters
-miu = 0;
+miu = -0.2;
 sigma = 0.5;
-x0 = 3;
+x0 = 2;
 
 % GBM density function
 f = @(t,x)1/sqrt(2*pi)./(x*sigma*sqrt(t)).*exp(-(log(x)-log(x0)-t*(miu-1/2*sigma^2)).^2/(2*sigma^2*t));
 
 % coordinates
-Lx = 5;
-nx = 101; N = ceil(nx/2)-1;
-x = linspace(0,Lx,nx)';
+Lx = 10;
+nx = 500;
+x = linspace(-Lx/2,Lx/2-Lx/nx,nx)';
 Lt = 5;
 nt = 20;
 t = linspace(Lt/nt,Lt,nt);
@@ -20,8 +20,8 @@ t = linspace(Lt/nt,Lt,nt);
 % true density values
 fx = zeros(nx,nt);
 for i = 1:nt
-    fx(1,i) = 0;
-    fx(2:nx,i) = f(t(i),x(2:nx));
+    fx(x<=0) = 0;
+    fx(x>0,i) = f(t(i),x(x>0));
 end
 
 % true fft
@@ -29,23 +29,25 @@ ytrue = zeros(nx,nt);
 for i = 1:nt
     ytrue(:,i) = fftshift(fft(fx(:,i)))/nx;
 end
-if mod(nx,2) == 0
-    ytrue(1,:) = [];
-end
+
+% fft of f(x)=x and f(x)=x^2;
+y_x = fftshift(fft(x))/nx;
+y_xsqr = fftshift(fft(x.^2))/nx;
 
 % propagation
 y(:,1) = ytrue(:,1);
-A = zeros(2*N+1,2*N+1);
-for i = 1:2*N+1
-    I = i-1-N;
-    for j = 1:2*N+1
-        J = j-1-N;
-        K = wrapToN(I-J,N);
-        k = K+1+N;
-        if J == 0
-            A(i,k) = -sigma^2*pi^2*I^2/3*2;
+A = zeros(nx,nx);
+for n = 1:nx
+    N = n-1-floor(nx/2);
+    for k = 1:nx
+        K = k-1-floor(nx/2);
+        NMiunsK = wrapDFT(N-K,nx);
+        nMinusk = NMiunsK+1+floor(nx/2);
+        
+        if n == 1 && mod(nx,2) == 0
+            A(n,nMinusk) = -2*sigma^2*pi^2*N^2/Lx^2*y_xsqr(k);
         else
-            A(i,k) = miu*I/J-sigma^2*I^2*(1/J^2+1i*pi/J);
+            A(n,nMinusk) = -miu*2*pi*1i*N/Lx*y_x(k) - 2*sigma^2*pi^2*N^2/Lx^2*y_xsqr(k);
         end
     end
 end
@@ -55,14 +57,14 @@ for i = 2:nt
 end
 
 % reconstruct
-fraq = (-N:N)/Lx*2*N/(2*N+1);
+fraq = ((0:nx-1)-floor(nx/2))/Lx;
 f_fft = @(x,y)real(sum(y.'.*exp(1i*fraq*2*pi.*x),2));
 
 % plot
 figure; hold on;
 for i = 1:nt
     plot3(x,ones(nx,1)*t(i),fx(:,i),'b');
-    plot3(x,ones(nx,1)*t(i),f_fft(x,ytrue(:,i)),'r');
-    plot3(x,ones(nx,1)*t(i),f_fft(x,y(:,i)),'g');
+    plot3(x,ones(nx,1)*t(i),f_fft(x+Lx/2,ytrue(:,i)),'r');
+    plot3(x,ones(nx,1)*t(i),f_fft(x+Lx/2,y(:,i)),'g');
 end
 
