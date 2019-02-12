@@ -17,17 +17,19 @@ x = linspace(-L/2,L/2-L/n,n)';
 fx = f(x);
 
 % fft
+shift = (-1).^((0:n-1)-floor(n/2)).';
 y = fftshift(fft(fx))/n;
+y = y.*shift;
 
 % reconstruct density function
 freq = ((0:n-1)-floor(n/2))/L;
 f_fft = @(x)real(sum(y.'.*exp(1i*freq*2*pi.*x),2));
 
 % plot
-n = 1001;
+n = 1000;
 x = linspace(-L/2,L/2-L/n,n)';
 
 figure; hold on;
 plot(x,f(x));
-plot(x,f_fft(x+L/2));
+plot(x,f_fft(x));
 

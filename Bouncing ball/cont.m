@@ -26,12 +26,17 @@ for i = 1:n1
 end
 
 % initial fft
+shift1 = (-1).^((0:n1-1)-floor(n1/2)).';
+shift2 = (-1).^((0:n2-1)-floor(n2/2));
 y = zeros(n1,n2,nt);
 y(:,:,1) = fftshift(fft2(fx(:,:,1)))/n1/n2;
+y(:,:,1) = shift1.*shift2.*y(:,:,1);
 
 % fft for f(x)=x and f(x)=x^2
 y_x = fftshift(fft(x2))/n2;
+y_x = shift2.*y_x;
 y_xsqr = fftshift(fft(x2.^2))/n2;
+y_xsqr = shift2.*y_xsqr;
 
 % propagation
 y0 = y(:,:,1);
@@ -79,7 +84,7 @@ f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
 parfor k = 2:nt
     for i = 1:n1
         for j = 1:n2
-            fx(i,j,k) = real(f_fft([x1(i)+L1/2;x2(j)+L2/2],y(:,:,k)));
+            fx(i,j,k) = real(f_fft([x1(i);x2(j)],y(:,:,k)));
         end
     end
 end

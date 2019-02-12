@@ -26,13 +26,16 @@ for i = 1:nt
 end
 
 % true fft
+shift = (-1).^((0:nx-1)-floor(nx/2)).';
 ytrue = zeros(nx,nt);
 for i = 1:nt
     ytrue(:,i) = fftshift(fft(fx(:,i)))/nx;
 end
+ytrue = ytrue.*shift;
 
 % fft of f(x) = x
 y_x = fftshift(fft(x))/nx;
+y_x = y_x.*shift;
 
 % propagation
 y(:,1) = ytrue(:,1);
@@ -73,7 +76,7 @@ f_fft = @(x,y)real(sum(y.'.*exp(1i*freq*2*pi.*x),2));
 figure; hold on;
 for i = 1:nt
     plot3(x,ones(nx,1)*t(i),fx(:,i),'b');
-    plot3(x,ones(nx,1)*t(i),f_fft(x+Lx/2,ytrue(:,i)),'r');
-    plot3(x,ones(nx,1)*t(i),f_fft(x+Lx/2,y(:,i)),'g');
+    plot3(x,ones(nx,1)*t(i),f_fft(x,ytrue(:,i)),'r');
+    plot3(x,ones(nx,1)*t(i),f_fft(x,y(:,i)),'g');
 end
 
