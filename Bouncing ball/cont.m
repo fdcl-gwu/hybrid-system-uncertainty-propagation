@@ -2,8 +2,8 @@ clear; close all;
 
 % parameters
 g = 9.8;
-niu = 5;
-sigma = 0.5;
+niu = 2;
+sigma = 0.2;
 x0 = [8;0];
 sigma0 = [0.5^2,0;0,0.1^2];
 
@@ -35,8 +35,10 @@ y(:,:,1) = shift1.*shift2.*y(:,:,1);
 % fft for f(x)=x and f(x)=x^2
 y_x = fftshift(fft(x2))/n2;
 y_x = shift2.*y_x;
-y_xsqr = fftshift(fft(x2.^2))/n2;
+y_xsqr = fftshift(fft(x2.*abs(x2)))/n2;
 y_xsqr = shift2.*y_xsqr;
+y_xfour = fftshift(fft(x2.^4))/n2;
+y_xfour = shift2.*y_xfour;
 
 % propagation
 y0 = y(:,:,1);
@@ -61,13 +63,13 @@ parfor m = 1:n1
                     part2 = 0;
                 else
                     if K == 0
-                        part2 = 2*pi*1i*N/L2*g + 2*pi*1i*N/L2*niu*y_x(k);
+                        part2 = 2*pi*1i*N/L2*g + 2*pi*1i*N/L2*niu*y_xsqr(k);
                     else
-                        part2 = 2*pi*1i*N/L2*niu*y_x(k);
+                        part2 = 2*pi*1i*N/L2*niu*y_xsqr(k);
                     end
                 end
                 
-                part3 = -2*sigma^2*pi^2*N^2/L2^2*y_xsqr(k);
+                part3 = -2*sigma^2*pi^2*N^2/L2^2*y_xfour(k);
                 
                 A(n,nMinusk) = part1 + part2 + part3;
             end
