@@ -4,15 +4,15 @@ clear; close all;
 g = 9.8;                                    % Gravity constant
 niu = 0.005;                                % Air drag coefficient
 sigmaNiu = 0.001;                           % standard deviation of air drag coefficient
-c = 0.95;                                   % coefficient of restitution
-sigmaC = 0.1;                               % standard deviation of coefficient of restitution
+c = 0.95;                                    % coefficient of restitution
+sigmaC = 0.01;                              % standard deviation of coefficient of restitution
 epsilonLamda = 0.1;                         % concentration parameter for transition rate
 sigmaX1 = 0.05;                             % concentration parameter for position reset
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.1^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
 % grid
-n1 = 100; n2 = 100;
+n1 = 50; n2 = 50;
 L1 = 4; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
@@ -44,6 +44,43 @@ y_xsqr = shift2.*y_xsqr;
 y_xfour = fftshift(fft(x2.^4))/n2;
 y_xfour = shift2.*y_xfour;
 
+% A for continuous transition
+expACont = zeros(n2,n2,n1);
+for m = 1:n1
+    ACont = zeros(n2,n2);
+    M = m-1-floor(n1/2);
+    for n = 1:n2
+        N = n-1-floor(n2/2);
+        for k = 1:n2
+            K = k-1-floor(n2/2);
+            NMinusK = wrapDFT(N-K,n2);
+            nMinusk = NMinusK+1+floor(n2/2);
+
+            if m == 1 && mod(n1,2) == 0
+                part1 = 0;
+            else
+                part1 = -2*pi*1i*M/L1*y_x(k);
+            end
+
+            if n == 1 && mod(n2,2) == 0
+                part2 = 0;
+            else
+                if K == 0
+                    part2 = 2*pi*1i*N/L2*g + 2*pi*1i*N/L2*niu*y_xsqr(k);
+                else
+                    part2 = 2*pi*1i*N/L2*niu*y_xsqr(k);
+                end
+            end
+
+            part3 = -2*sigmaNiu^2*pi^2*N^2/L2^2*y_xfour(k);
+
+            ACont(n,nMinusk) = part1 + part2 + part3;
+        end
+    end
+    
+    expACont(:,:,m) = expm(ACont*Lt/(nt-1));
+end
+
 % density reconstruction from Fourier coefficient
 fraq1 = ((0:n1-1)'-floor(n1/2))/L1;
 fraq2 = ((0:n2-1)-floor(n2/2))/L2;
@@ -65,50 +102,36 @@ for m_2 = 1:n1
 end
 kai = repmat(kai,n1,1);
 
+% A for discrete transition
+ADist = zeros(n1*n2,n1*n2);
+for m_1 = 1:n1
+    for m_2 = 1:n1
+        for n_1 = 1:n2
+            for n_2 = 1:n2
+                part1 = kai(m_1,n_1,m_2,n_2)*lamda(m_1,n_1)*L1/n1*L2/n2;
+                if m_1 == m_2 && n_1 == n_2
+                    part2 = -lamda(m_2,n_2);
+                else
+                    part2 = 0;
+                end
+                ADist((n_2-1)*n1+m_2,(n_1-1)*n1+m_1) = part1+part2;
+            end
+        end
+    end
+end
+expADist = expm(ADist*Lt/(nt-1));
+
 % propagation
 addpath('tests');
 for i = 2:nt
     %% continuous part
     % Fourier coefficient propagation
-    y_temp = zeros(n1,n2);
-    parfor m = 1:n1
-        A = zeros(n2,n2);
-        M = m-1-floor(n1/2);
-        for n = 1:n2
-            N = n-1-floor(n2/2);
-            for k = 1:n2
-                K = k-1-floor(n2/2);
-                NMinusK = wrapDFT(N-K,n2);
-                nMinusk = NMinusK+1+floor(n2/2);
-
-                if m == 1 && mod(n1,2) == 0
-                    part1 = 0;
-                else
-                    part1 = -2*pi*1i*M/L1*y_x(k);
-                end
-
-                if n == 1 && mod(n2,2) == 0
-                    part2 = 0;
-                else
-                    if K == 0
-                        part2 = 2*pi*1i*N/L2*g + 2*pi*1i*N/L2*niu*y_xsqr(k);
-                    else
-                        part2 = 2*pi*1i*N/L2*niu*y_xsqr(k);
-                    end
-                end
-
-                part3 = -2*sigmaNiu^2*pi^2*N^2/L2^2*y_xfour(k);
-
-                A(n,nMinusk) = part1 + part2 + part3;
-            end
-        end
-        
-        y_temp(m,:) = (expm(A*Lt/(nt-1))*y(m,:,i-1).').';
+    for m = 1:n1
+        y(m,:,i) = (expACont(:,:,m)*y(m,:,i-1).').';
     end
-    y(:,:,i) = y_temp;
     
     % reconstruct density
-    parfor m = 1:n1
+    for m = 1:n1
         for n = 1:n2
             fx(m,n,i) = real(f_fft([x1(m);x2(n)],y(:,:,i)));
         end
@@ -116,24 +139,8 @@ for i = 2:nt
     
     %% discrete part
     % density propagation
-    A = zeros(n1*n2,n1*n2);
-    for m_1 = 1:n1
-        for m_2 = 1:n1
-            for n_1 = 1:n2
-                for n_2 = 1:n2
-                    part1 = kai(m_1,n_1,m_2,n_2)*lamda(m_1,n_1)*L1/n1*L2/n2;
-                    if m_1 == m_2 && n_1 == n_2
-                        part2 = -lamda(m_2,n_2);
-                    else
-                        part2 = 0;
-                    end
-                    A((n_2-1)*n1+m_2,(n_1-1)*n1+m_1) = part1+part2;
-                end
-            end
-        end
-    end
-    
-    fx(:,:,i) = reshape(expm(A*Lt/(nt-1))*reshape(fx(:,:,i),[],1),n1,n2);
+    fx(:,:,i) = reshape(expADist*reshape(fx(:,:,i),[],1),n1,n2);
+    fx(:,:,i) = fx(:,:,i)/(sum(sum(fx(:,:,i)*L1*L2/n1/n2)));
     
     % fft again
     y(:,:,i) = fftshift(fft2(fx(:,:,i)))/n1/n2;
