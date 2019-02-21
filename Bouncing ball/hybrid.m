@@ -2,22 +2,22 @@ clear; close all;
 
 % parameters
 g = 9.8;                                    % Gravity constant
-niu = 0.1;                                  % Air drag coefficient
-sigmaNiu = 0.01;                            % standard deviation of air drag coefficient
-c = 1.1;                                    % coefficient of restitution
-sigmaC = 0.02;                              % standard deviation of coefficient of restitution
+niu = 0.005;                                % Air drag coefficient
+sigmaNiu = 0.001;                           % standard deviation of air drag coefficient
+c = 0.95;                                   % coefficient of restitution
+sigmaC = 0.1;                               % standard deviation of coefficient of restitution
 epsilonLamda = 0.1;                         % concentration parameter for transition rate
-sigmaX1 = 0.5;                              % concentration parameter for position reset
-x0 = [8;0];                                 % initial condition
-sigma0 = [0.5^2,0;0,0.5^2];                 % covariance matrix of initial condition
+sigmaX1 = 0.05;                             % concentration parameter for position reset
+x0 = [1.5;0];                               % initial condition
+sigma0 = [0.1^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
 % grid
 n1 = 100; n2 = 100;
-L1 = 20; L2 = 20;
+L1 = 4; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
-nt = 41;
-Lt = 4;
+nt = 241;
+Lt = 6;
 t = linspace(0,Lt,nt);
 
 % initial density function
@@ -64,6 +64,7 @@ for m_1 = 1:n1
 end
 
 % propagation
+addpath('tests');
 for i = 2:nt
     %% continuous part
     % Fourier coefficient propagation
@@ -146,4 +147,15 @@ for i = 1:nt
     view([0,0,1]);
 end
 
+% save data
+parameter.g = g;
+parameter.niu = niu;
+parameter.sigmaNiu = sigmaNiu;
+parameter.c = c;
+parameter.sigmaC = sigmaC;
+parameter.epsilonLamda = epsilonLamda;
+parameter.epsilonX1 = sigmaX1;
+parameter.x0 = x0;
+parameter.sigma0 = sigma0;
 
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameters','x1','x2','t','y','fx');
