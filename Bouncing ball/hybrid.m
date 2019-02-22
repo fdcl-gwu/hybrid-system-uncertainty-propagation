@@ -99,6 +99,7 @@ for n_1 = 1:n2
                 exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaV^2));
         end
     end
+    kai(1,n_1,:,:) = kai(1,n_1,:,:)/sum(sum(kai(1,n_1,:,:)*L1*L2/n1/n2));
 end
 kai = repmat(kai,n1,1);
 
@@ -140,6 +141,9 @@ for i = 2:nt
     % density propagation
     fx(:,:,i) = reshape(expADist*reshape(fx(:,:,i),[],1),n1,n2);
     fx(:,:,i) = fx(:,:,i)/(sum(sum(fx(:,:,i)*L1*L2/n1/n2)));
+    temp = fx(:,:,i);
+    temp(fx(:,:,i)<1e-2) = 0;
+    fx(:,:,i) = temp;
     
     % fft again
     y(:,:,i) = fftshift(fft2(fx(:,:,i)))/n1/n2;
