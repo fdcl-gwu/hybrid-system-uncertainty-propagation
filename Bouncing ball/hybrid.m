@@ -1,19 +1,20 @@
 clear; close all;
+addpath('tests');
 
 % parameters
 g = 9.8;                                    % Gravity constant
 niu = 0.005;                                % Air drag coefficient
 sigmaNiu = 0.001;                           % standard deviation of air drag coefficient
-c = 0.95;                                    % coefficient of restitution
+c = 0.95;                                   % coefficient of restitution
 sigmaC = 0.01;                              % standard deviation of coefficient of restitution
 epsilonLamda = 0.1;                         % concentration parameter for transition rate
-sigmaX1 = 0.05;                             % concentration parameter for position reset
+sigmaX1 = 0.1;                             % concentration parameter for position reset
 x0 = [1.5;0];                               % initial condition
-sigma0 = [0.1^2,0;0,0.5^2];                 % covariance matrix of initial condition
+sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
 % grid
-n1 = 50; n2 = 50;
-L1 = 4; L2 = 16;
+n1 = 100; n2 = 100;
+L1 = 5; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
 nt = 241;
@@ -122,7 +123,6 @@ end
 expADist = expm(ADist*Lt/(nt-1));
 
 % propagation
-addpath('tests');
 for i = 2:nt
     %% continuous part
     % Fourier coefficient propagation
