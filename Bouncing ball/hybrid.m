@@ -6,9 +6,9 @@ g = 9.8;                                    % Gravity constant
 niu = 0.005;                                % Air drag coefficient
 sigmaNiu = 0.001;                           % standard deviation of air drag coefficient
 c = 0.95;                                   % coefficient of restitution
-sigmaC = 0.01;                              % standard deviation of coefficient of restitution
+sigmaV = 0.05;                              % standard deviation for velocity reset
 epsilonLamda = 0.1;                         % concentration parameter for transition rate
-sigmaX1 = 0.1;                             % concentration parameter for position reset
+sigmaX1 = 0.1;                              % concentration parameter for position reset
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
@@ -92,13 +92,12 @@ lamda = zeros(n1,n2);
 lamda(x1>=0,x2<=0) = repmat(1e3*epsilonLamda*exp(-x1(x1>=0)/epsilonLamda),1,length(find(x2<=0)));
 lamda(x1<0,x2<=0) = repmat(lamda(x1==0,x2==0),length(find(x1<0)),length(find(x2<=0)));
 kai = zeros(1,n2,n1,n2);
-for m_2 = 1:n1
-    for n_2 = 1:n2
-        for n_1 = setdiff(1:n2,find(x2==0))
-            kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*sigmaC*abs(x2(n_1)))*...
-                exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaC^2*x2(n_1)^2));
+for n_1 = 1:n2
+    for m_2 = 1:n1
+        for n_2 = 1:n2
+            kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*sigmaV)*...
+                exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaV^2));
         end
-        kai(1,x2==0,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*0.1)*exp(-x2(n_2)^2/2/0.1^2);
     end
 end
 kai = repmat(kai,n1,1);
@@ -161,7 +160,7 @@ parameter.g = g;
 parameter.niu = niu;
 parameter.sigmaNiu = sigmaNiu;
 parameter.c = c;
-parameter.sigmaC = sigmaC;
+parameter.sigmaV = sigmaV;
 parameter.epsilonLamda = epsilonLamda;
 parameter.epsilonX1 = sigmaX1;
 parameter.x0 = x0;

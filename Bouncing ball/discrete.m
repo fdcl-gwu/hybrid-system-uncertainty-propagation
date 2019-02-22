@@ -2,7 +2,7 @@ clear; close all;
 
 % parameters
 c = 0.9;                                    % coefficient of restitution
-sigmaC = 0.1;                               % standard deviation of coefficient of restitution
+sigmaV = 0.1;                               % standard deviation of coefficient of restitution
 epsilonLamda = 0.1;                         % concentration parameter for transition rate
 sigmaX1 = 0.05;                             % concentration parameter for position reset
 x0 = [0;-3];                                % initial condition
@@ -31,11 +31,10 @@ lamda(x1<0,x2<=0) = repmat(lamda(x1==0,x2==0),length(find(x1<0)),length(find(x2<
 kai = zeros(1,n2,n1,n2);
 for m_2 = 1:n1
     for n_2 = 1:n2
-        for n_1 = setdiff(1:n2,find(x2==0))
-            kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*sigmaC*abs(x2(n_1)))*...
-                exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaC^2*x2(n_1)^2));
+        for n_1 = 1:n2
+            kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*sigmaV)*...
+                exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaV^2));
         end
-        kai(1,x2==0,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*0.1)*exp(-x2(n_2)^2/2/0.1^2);
     end
 end
 kai = repmat(kai,n1,1);
