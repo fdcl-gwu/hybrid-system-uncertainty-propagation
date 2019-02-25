@@ -7,7 +7,6 @@ niu = 0.005;                                % Air drag coefficient
 sigmaNiu = 0.001;                           % standard deviation of air drag coefficient
 c = 0.95;                                   % coefficient of restitution
 sigmaV = 0.05;                              % standard deviation for velocity reset
-epsilonLamda = 0.1;                         % concentration parameter for transition rate
 sigmaX1 = 0.1;                              % concentration parameter for position reset
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
@@ -89,8 +88,7 @@ f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
 
 % transition kernal and rate
 lamda = zeros(n1,n2);
-lamda(x1>=0,x2<=0) = repmat(1e3*epsilonLamda*exp(-x1(x1>=0)/epsilonLamda),1,length(find(x2<=0)));
-lamda(x1<0,x2<=0) = repmat(lamda(x1==0,x2==0),length(find(x1<0)),length(find(x2<=0)));
+lamda(x1<0,:) = 100;
 kai = zeros(1,n2,n1,n2);
 for n_1 = 1:n2
     for m_2 = 1:n1
@@ -137,13 +135,14 @@ for i = 2:nt
         end
     end
     
+    temp = fx(:,:,i);
+    temp(fx(:,:,i)<1e-2) = 0;
+    fx(:,:,i) = temp;
+    
     %% discrete part
     % density propagation
     fx(:,:,i) = reshape(expADist*reshape(fx(:,:,i),[],1),n1,n2);
     fx(:,:,i) = fx(:,:,i)/(sum(sum(fx(:,:,i)*L1*L2/n1/n2)));
-    temp = fx(:,:,i);
-    temp(fx(:,:,i)<1e-2) = 0;
-    fx(:,:,i) = temp;
     
     % fft again
     y(:,:,i) = fftshift(fft2(fx(:,:,i)))/n1/n2;
@@ -165,8 +164,7 @@ parameter.niu = niu;
 parameter.sigmaNiu = sigmaNiu;
 parameter.c = c;
 parameter.sigmaV = sigmaV;
-parameter.epsilonLamda = epsilonLamda;
-parameter.epsilonX1 = sigmaX1;
+parameter.sigmaX1 = sigmaX1;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 
