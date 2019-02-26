@@ -43,7 +43,7 @@ parfor i = 1:nt
     fx1 = x(:,1,i)>repmat(x1',nSample,1) & x(:,1,i)<=repmat(x1'+L1/n1,nSample,1);
     fx2 = x(:,2,i)>repmat(x2,nSample,1) & x(:,2,i)<=repmat(x2+L2/n2,nSample,1);
     for j = 1:n1
-        fx(j,:,i) = sum(fx1(:,j) & fx2)/nSample;
+        fx(j,:,i) = sum(fx1(:,j) & fx2)/nSample*n1*n2/L1/L2;
     end
     fprintf(strcat(num2str(i),'th iteration finished\n'));
 end
