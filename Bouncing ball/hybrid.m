@@ -88,24 +88,24 @@ f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
 
 % transition kernal and rate
 lamda = zeros(n1,n2);
-lamda(x1<0,:) = 100;
+lamda(x1<0 & x1>-1,:) = 500;
 kai = zeros(1,n2,n1,n2);
-for n_1 = 1:n2
-    for m_2 = 1:n1
-        for n_2 = 1:n2
-            if x2(n_1) < 0
-                kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)/(sqrt(2*pi)*sigmaV)*...
-                    exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaV^2));
-            else
-                if n_1 == n_2
-                    kai(1,n_1,m_2,n_2) = 1/sqrt(2*pi)/sigmaX1*exp(-x1(m_2)^2/2/sigmaX1^2)*n2/L2;
+for m_1 = 1:n1
+    for n_1 = 1:n2
+        for m_2 = find(abs(x1+x1(m_1))<1e-3 | [false(n1/2,1);m_1==1;false(n1/2-1,1)])
+            for n_2 = 1:n2
+                if x2(n_1) < 0
+                    kai(m_1,n_1,m_2,n_2) = n1/L1/(sqrt(2*pi)*sigmaV)*exp(-(x2(n_2)+c*x2(n_1))^2/(2*sigmaV^2));
+                else
+                    if n_1 == n_2
+                        kai(m_1,n_1,m_2,n_2) = n1/L1*n2/L2;
+                    end
                 end
             end
         end
+        kai(m_1,n_1,:,:) = kai(m_1,n_1,:,:)/sum(sum(kai(m_1,n_1,:,:)*L1*L2/n1/n2));
     end
-    kai(1,n_1,:,:) = kai(1,n_1,:,:)/sum(sum(kai(1,n_1,:,:)*L1*L2/n1/n2));
 end
-kai = repmat(kai,n1,1);
 
 % A for discrete transition
 ADist = zeros(n1*n2,n1*n2);
