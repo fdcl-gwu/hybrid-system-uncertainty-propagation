@@ -61,14 +61,15 @@ end
 A = zeros(n1*n2,n1*n2);
 for m_1 = 1:n1
     for n_1 = 1:n2
+        M_1 = m_1-1-floor(n1/2);
+        N_1 = n_1-1-floor(n2/2);
+        E = L1*L2/(n1*n2)*(exp((-n1/2:n1/2-1).'*M_1/n1).*exp((-n2/2:n2/2-1)*N_1/n2)).^(-2*pi*1i);
+        
         for m_2 = 1:n1
             for n_2 = 1:n2
-                M_1 = m_1-1-floor(n1/2);
-                N_1 = n_1-1-floor(n2/2);
                 M_2 = m_2-1-floor(n1/2);
                 N_2 = n_2-1-floor(n2/2);
                 
-                E = L1*L2/(n1*n2)*(exp((-n1/2:n1/2-1).'*M_1/n1).*exp((-n2/2:n2/2-1)*N_1/n2)).^(-2*pi*1i);
                 f00 = y_kailamda(wrapDFT(-M_2,n1)+1+floor(n1/2),wrapDFT(-N_2,n2)+1+floor(n2/2),:,:);
                 part1 = sum(sum(reshape(f00,n1,n2).*E));
                 

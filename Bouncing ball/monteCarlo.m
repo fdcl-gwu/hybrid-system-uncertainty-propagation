@@ -56,4 +56,13 @@ for i = 1:nt
     view([0,0,1]);
 end
 
+% save data
+parameter.g = g;
+parameter.niu = niu;
+parameter.sigmaNiu = sigmaNiu;
+parameter.c = c;
+parameter.sigmaV = sigmaV;
+parameter.x0 = x0;
+parameter.sigma0 = sigma0;
 
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','fx');
