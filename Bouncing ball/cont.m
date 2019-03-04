@@ -1,19 +1,21 @@
-clear; close all;
+function [fx] = cont()
+close all;
+addpath('tests');
 
 % parameters
 g = 9.8;
-niu = 2;
-sigma = 0.2;
-x0 = [8;0];
-sigma0 = [0.5^2,0;0,0.1^2];
+niu = 0.05;
+sigma = 0.01;
+x0 = [1.5;0];
+sigma0 = [0.2^2,0;0,0.5^2];
 
 % grid
 n1 = 100; n2 = 100;
-L1 = 20; L2 = 10;
+L1 = 5; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1);
 x2 = linspace(-L2/2,L2/2-L2/n2,n2);
-nt = 21;
-Lt = 5;
+nt = 41;
+Lt = 1;
 t = linspace(0,Lt,nt);
 
 % initial density function
@@ -96,5 +98,9 @@ for i = 1:nt
 figure;
 surf(x2,x1,fx(:,:,i));
 view([0,0,1]);
+end
+
+rmpath('tests');
+
 end
 
