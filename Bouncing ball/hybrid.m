@@ -1,18 +1,19 @@
-clear; close all;
+function [fx] = hybrid()
+
+close all;
 addpath('tests');
 
 % parameters
 g = 9.8;                                    % Gravity constant
 niu = 0.05;                                 % Air drag coefficient
 sigmaNiu = 0.01;                            % standard deviation of air drag coefficient
-c = 0.9;                                    % coefficient of restitution
+c = 0.95;                                   % coefficient of restitution
 sigmaV = 0.5;                               % standard deviation for velocity reset
-sigmaX1 = 0.1;                              % concentration parameter for position reset
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
 % grid
-n1 = 100; n2 = 100;
+n1 = 100; n2 = 50;
 L1 = 5; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
@@ -88,8 +89,9 @@ f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
 
 % transition kernal and rate
 lamda = zeros(n1,n2);
-lamda(x1<0 & x1>-1,x2<=0) = 500;
-kai = zeros(1,n2,n1,n2);
+lamda(x1<0,x2<0) = 500;
+lamda(x1==0,x2<0) = 30;
+kai = zeros(n1,n2,n1,n2);
 for m_1 = 1:n1
     for n_1 = 1:n2
         for m_2 = find(abs(x1-abs(x1(m_1)))<1e-3 | [false(n1/2,1);m_1==1;false(n1/2-1,1)])
@@ -128,7 +130,7 @@ expADist = expm(ADist*Lt/(nt-1));
 
 % propagation
 for i = 2:nt
-    %% continuous part
+    % continuous part
     % Fourier coefficient propagation
     for m = 1:n1
         y(m,:,i) = (expACont(:,:,m)*y(m,:,i-1).').';
@@ -142,10 +144,10 @@ for i = 2:nt
     end
     
     temp = fx(:,:,i);
-    temp(fx(:,:,i)<1e-2) = 0;
+    temp(fx(:,:,i)<3e-3) = 0;
     fx(:,:,i) = temp;
     
-    %% discrete part
+    % discrete part
     % density propagation
     fx(:,:,i) = reshape(expADist*reshape(fx(:,:,i),[],1),n1,n2);
     fx(:,:,i) = fx(:,:,i)/(sum(sum(fx(:,:,i)*L1*L2/n1/n2)));
@@ -170,8 +172,9 @@ parameter.niu = niu;
 parameter.sigmaNiu = sigmaNiu;
 parameter.c = c;
 parameter.sigmaV = sigmaV;
-parameter.sigmaX1 = sigmaX1;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 
 save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx');
+
+end
