@@ -1,3 +1,5 @@
+function [fx] = hybrid2()
+
 clear; close all;
 addpath('tests');
 
@@ -5,15 +7,14 @@ addpath('tests');
 g = 9.8;                                    % Gravity constant
 niu = 0.05;                                 % Air drag coefficient
 sigmaNiu = 0.01;                            % standard deviation of air drag coefficient
-c = 0.9;                                    % coefficient of restitution
+c = 0.95;                                   % coefficient of restitution
 sigmaV = 0.5;                               % standard deviation of coefficient of restitution
-epsilonLamda = 0.03;                        % concentration parameter for transition rate
-sigmaX1 = 0.2;                              % concentration parameter for position reset
+epsilonLamda = 0.036;                       % concentration parameter for transition rate
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
 
 % grid
-n1 = 100; n2 = 100;
+n1 = 100; n2 = 50;
 L1 = 5; L2 = 16;
 x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
@@ -47,8 +48,8 @@ y_xfour = shift2.*y_xfour;
 
 % transition kernal and rate
 lamda = zeros(n1,n2);
-lamda(x1>=-0.1&x1<0.3,x2<=0) = repmat(1e2/exp(0.1/epsilonLamda)*exp(-x1(x1>=-0.1&x1<0.3)/epsilonLamda),1,length(find(x2<=0)));
-lamda(x1<-0.1,x2<=0) = repmat(1e2,length(find(x1<-0.1)),length(find(x2<=0)));
+lamda(x1>=0&x1<0.5,x2<=0) = repmat(1e2/exp(0.1/epsilonLamda)*exp(-x1(x1>=0&x1<0.5)/epsilonLamda),1,length(find(x2<=0)));
+lamda(x1<0,x2<=0) = repmat(1e2,length(find(x1<0)),length(find(x2<=0)));
 kai = zeros(1,n2,n1,n2);
 for m_1 = 1:n1
     for n_1 = 1:n2
@@ -144,7 +145,7 @@ for i = 2:nt
     end
     
     temp = fx(:,:,i);
-    temp(fx(:,:,i)<1e-2) = 0;
+    temp(fx(:,:,i)<3e-3) = 0;
     fx(:,:,i) = temp;
     fx(:,:,i) = fx(:,:,i)/(sum(sum(fx(:,:,i)*L1*L2/n1/n2)));
     
@@ -165,8 +166,9 @@ parameter.niu = niu;
 parameter.sigmaNiu = sigmaNiu;
 parameter.c = c;
 parameter.sigmaV = sigmaV;
-parameter.sigmaX1 = sigmaX1;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 
 save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx');
+
+end
