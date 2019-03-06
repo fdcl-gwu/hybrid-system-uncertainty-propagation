@@ -2,6 +2,7 @@ function [fx] = hybrid2()
 
 clear; close all;
 addpath('tests');
+tic;
 
 % parameters
 g = 9.8;                                    % Gravity constant
@@ -153,6 +154,8 @@ for i = 2:nt
     y(:,:,i) = shift1.*shift2.*y(:,:,i);
 end
 
+simulT = toc;
+
 % plot
 for i = 1:nt
     figure;
@@ -166,9 +169,10 @@ parameter.niu = niu;
 parameter.sigmaNiu = sigmaNiu;
 parameter.c = c;
 parameter.sigmaV = sigmaV;
+parameter.epsilonLamda = epsilonLamda;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx','simulT');
 
 end

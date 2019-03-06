@@ -2,6 +2,7 @@ function [fx] = hybridMC()
 
 close all;
 rng('shuffle');
+tic;
 
 % parameters
 g = 9.8;                                    % Gravity constant
@@ -11,7 +12,7 @@ c = 0.95;                                   % coefficient of restitution
 sigmaV = 0.5;                               % standard deviation for velocity reset
 x0 = [1.5;0];                               % initial condition
 sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
-nSample = 1000000;                           % sample size
+nSample = 1000000;                          % sample size
 
 % grid
 n1 = 100; n2 = 50;
@@ -44,11 +45,13 @@ fx = zeros(n1,n2,nt);
 for i = 1:nt
     fx1 = x(:,1,i)>repmat(x1'-L1/n1/2,nSample,1) & x(:,1,i)<=repmat(x1'+L1/n1/2,nSample,1);
     fx2 = x(:,2,i)>repmat(x2-L2/n2/2,nSample,1) & x(:,2,i)<=repmat(x2+L2/n2/2,nSample,1);
-    parfor j = 1:n1
+    for j = 1:n1
         fx(j,:,i) = sum(fx1(:,j) & fx2)/nSample*n1*n2/L1/L2;
     end
     fprintf(strcat(num2str(i),'th iteration finished\n'));
 end
+
+simulT = toc;
 
 % plot
 for i = 1:nt
@@ -65,7 +68,8 @@ parameter.c = c;
 parameter.sigmaV = sigmaV;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
+parameter.nSample = nSample;
 
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','fx');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','x','fx','simulT');
 
 end

@@ -2,6 +2,7 @@ function [fx] = hybrid()
 
 close all;
 addpath('tests');
+tic;
 
 % parameters
 g = 9.8;                                    % Gravity constant
@@ -159,6 +160,8 @@ for i = 2:nt
     fprintf(strcat(num2str(i),'th iteration finished\n'));
 end
 
+simulT = toc;
+
 % plot
 for i = 1:nt
     figure;
@@ -175,6 +178,6 @@ parameter.sigmaV = sigmaV;
 parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx','simulT');
 
 end
