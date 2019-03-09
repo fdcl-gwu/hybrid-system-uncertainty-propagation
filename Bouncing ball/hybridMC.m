@@ -70,6 +70,6 @@ parameter.x0 = x0;
 parameter.sigma0 = sigma0;
 parameter.nSample = nSample;
 
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','x','fx','simulT');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','x','fx','simulT','-v7.3');
 
 end
