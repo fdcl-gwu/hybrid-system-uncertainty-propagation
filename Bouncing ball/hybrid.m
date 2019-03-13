@@ -90,7 +90,7 @@ f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
 
 % transition kernal and rate
 lamda = zeros(n1,n2);
-lamda(x1<0,x2<0) = 500;
+lamda(x1<0,x2<0) = 100;
 lamda(x1==0,x2<0) = 30;
 kai = zeros(n1,n2,n1,n2);
 for m_1 = 1:n1
