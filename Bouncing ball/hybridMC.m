@@ -49,7 +49,7 @@ for i = 1:nt
         
         fx(index1,index2,i) = fx(index1,index2,i)+1;
     end
-    fx = fx/nSample*n1*n2/L1/L2;
+    fx(:,:,i) = fx(:,:,i)/nSample*n1*n2/L1/L2;
     fprintf(strcat(num2str(i),'th iteration finished\n'));
 end
 
