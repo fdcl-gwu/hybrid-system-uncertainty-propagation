@@ -1,4 +1,5 @@
 clear; close all;
+addpath('..\..\lib');
 
 % parameters
 miu = -2;
@@ -122,4 +123,6 @@ for i = 1:nt
     plot3(x,ones(nx,1)*t(i),f_fft(x,ytrue(:,i)),'r');
     plot3(x,ones(nx,1)*t(i),f_fft(x,y2(:,i)),'g');
 end
+
+rmpath('..\..\lib');
 

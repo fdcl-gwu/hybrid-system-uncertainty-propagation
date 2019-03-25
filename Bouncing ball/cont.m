@@ -1,6 +1,6 @@
 function [fx] = cont()
 close all;
-addpath('tests');
+addpath('..\lib');
 
 % parameters
 g = 9.8;
@@ -100,7 +100,7 @@ surf(x2,x1,fx(:,:,i));
 view([0,0,1]);
 end
 
-rmpath('tests');
+rmpath('..\lib');
 
 end
 

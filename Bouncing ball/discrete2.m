@@ -1,7 +1,7 @@
 function [fx] = discrete2()
 
 close all;
-addpath('tests');
+addpath('..\lib');
 
 % parameters
 c = 0.95;                                   % coefficient of restitution
@@ -111,7 +111,7 @@ figure;
 surf(x2,x1,fx(:,:,2));
 view([0,0,1]);
 
-rmpath('tests');
+rmpath('..\lib');
 
 end
 
