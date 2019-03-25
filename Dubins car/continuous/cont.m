@@ -1,7 +1,7 @@
 function [ fx, y ] = cont( mode )
 
 close all;
-addpath('..\lib');
+addpath('..\..\lib');
 
 % parameters
 v = 0.5;
@@ -32,7 +32,7 @@ k_0 = 20;
 fx = zeros(N1,N2,N3,Nt);
 fx(:,:,:,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1,1)-x1_0).^2/sigma1_0^2) .* ...
     (1/(sqrt(2*pi)*sigma2_0)*exp(-0.5*(reshape(x2,1,[],1)-x2_0).^2/sigma2_0^2)) .* ...
-    (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x2,1,1,[])-x3_0)));
+    (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x3,1,1,[])-x3_0)));
 
 % Fourier transform of initial distribution
 y = zeros(N1,N2,N3,Nt);
@@ -105,7 +105,7 @@ for nt = 1:Nt
     view([0,0,1]);
 end
 
-rmpath('..\lib');
+rmpath('..\..\lib');
 
 end
 
