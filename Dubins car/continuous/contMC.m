@@ -69,7 +69,7 @@ for nt = 1:Nt
     view([0,0,1]);
 end
 
-addpath('..\..\lib');
+rmpath('..\..\lib');
 
 end
 
