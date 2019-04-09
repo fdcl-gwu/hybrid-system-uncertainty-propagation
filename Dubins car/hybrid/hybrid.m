@@ -5,10 +5,11 @@ addpath('..\..\lib');
 
 % parameters
 v = 1;
-u = [0,1,-1];
+u = [0,2,-2];
 sigma = 0.2;
-xo1 = 0;
-xo2 = -0.5;
+xo1 = [0,-1.5,1.5];
+xo2 = [0.5,1,1];
+No = length(xo1);
 d = 0.5;
 epsilon = 1e6;
 
@@ -19,8 +20,8 @@ x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
 N3 = 50;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
-Nt = 121;
-Lt = 3;
+Nt = 161;
+Lt = 4;
 t = linspace(0,Lt,Nt);
 
 % initial conditions
@@ -87,14 +88,22 @@ end
 clear ACont;
 
 % coefficients discrete propagation
-thetao = atan2(xo2-x2,xo1-x1');
-[G1_1,G1_2,G1_3] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1).^2+(x2-xo2).^2)<d &...
-    wrapToPi(thetao-reshape(x3,1,1,[]))>=0 &...
-    wrapToPi(thetao-reshape(x3,1,1,[])<pi)));
-[G2_1,G2_2,G2_3] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1).^2+(x2-xo2).^2)<d &...
-    wrapToPi(thetao-reshape(x3,1,1,[]))>=-pi &...
-    wrapToPi(thetao-reshape(x3,1,1,[])<0)));
-[G3_1,G3_2] = find(sqrt((x1'-xo1).^2+(x2-xo2).^2)>=d);
+G1_1 = cell(No,1); G1_2 = cell(No,1); G1_3 = cell(No,1);
+G2_1 = cell(No,1); G2_2 = cell(No,1); G2_3 = cell(No,1);
+for no = 1:No
+    thetao = atan2(xo2(no)-x2,xo1(no)-x1');
+    [G1_1{no},G1_2{no},G1_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))>=0 &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))<pi));
+    [G2_1{no},G2_2{no},G2_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))>=-pi &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))<0));
+end
+G1_1 = cat(1,G1_1{:}); G1_2 = cat(1,G1_2{:}); G1_3 = cat(1,G1_3{:});
+G2_1 = cat(1,G2_1{:}); G2_2 = cat(1,G2_2{:}); G2_3 = cat(1,G2_3{:});
+[G3_1,G3_2] = find(sqrt((x1'-xo1(1)).^2+(x2-xo2(1)).^2)>=d &...
+    sqrt((x1'-xo1(2)).^2+(x2-xo2(2)).^2)>=d &...
+    sqrt((x1'-xo1(3)).^2+(x2-xo2(3)).^2)>=d);
 
 ADisc = cell(3,1);
 ADisc{1} = [-epsilon,0,0;0,0,0;epsilon,0,0];
@@ -117,10 +126,6 @@ for nt = 2:Nt
     for s = 1:3
         fx(:,:,:,s,nt) = ifftn(ifftshift(y(:,:,:,s,nt)./shift1./shift2./shift3*n1*n2*n3),'symmetric');
     end
-    
-    temp = fx(:,:,:,:,nt);
-    temp(temp<1e-3) = 0;
-    fx(:,:,:,:,nt) = temp;
     
     % renormalize
     fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/(sum(sum(sum(sum(fx(:,:,:,:,nt)))))*L1/N1*L2/N2*(2*pi)/N3);
@@ -151,13 +156,17 @@ for nt = 2:Nt
 end
 
 % plot
-for nt = 1:Nt
+for nt = 1:4:Nt
     figure;
     plot(x3,reshape(sum(sum(sum(fx(:,:,:,:,nt)*L1/N1*L2/N2,1),2),4),[],1,1));
 end
 
-for nt = 1:Nt
-    figure;
+for nt = 1:4:Nt
+    figure; hold on;
+    for no = 1:No
+        scatter3(xo1(no),xo2(no),1,'Marker','o','SizeData',20,'MarkerFaceColor','k','MarkerEdgeColor','k');
+        plot3(xo1(no)+d*cos(0:0.01:2*pi),xo2(no)+d*sin(0:0.01:2*pi),ones(1,length(0:0.01:2*pi)),'Color','k','LineWidth',3);
+    end
     surf(x1,x2,sum(sum(fx(:,:,:,:,nt)*2*pi/N3,3),4)');
     view([0,0,1]);
 end
@@ -167,6 +176,9 @@ parameter.x1 = x1;
 parameter.x2 = x2;
 parameter.x3 = x3;
 parameter.t = t;
+parameter.xo1 = xo1;
+parameter.xo2 = xo2;
+parameter.d = d;
 save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'parameter','fx');
 
 rmpath('..\..\lib');

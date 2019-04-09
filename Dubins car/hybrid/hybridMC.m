@@ -1,4 +1,4 @@
-function [ fx, x ] = hybridMC(inputArg1,inputArg2)
+function [ fx, x ] = hybridMC(  )
 
 close all;
 rng('shuffle');
@@ -6,10 +6,11 @@ addpath('..\..\lib');
 
 % parameters
 v = 1;
-u = [0,1,-1];
+u = [0,2,-2];
 sigma = 0.2;
-xo1 = 0;
-xo2 = -0.5;
+xo1 = [0,-1.5,1.5];
+xo2 = [0.5,1,1];
+No = length(xo1);
 d = 0.5;
 nSample = 100000;
 
@@ -20,8 +21,8 @@ x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
 N3 = 50;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
-Nt = 121;
-Lt = 3;
+Nt = 161;
+Lt = 4;
 t = linspace(0,Lt,Nt);
 dt = Lt/(Nt-1);
 
@@ -52,16 +53,21 @@ for nt = 2:Nt
     % discrete
     theta = atan2(xo2-x(:,2,nt),xo1-x(:,1,nt));
     dtheta = wrapToPi(theta-x(:,3,nt));
-    in = sqrt(sum((x(:,1:2,nt)-[xo1,xo2]).^2,2)) < d;
+    in = false(nSample,No);
+    for no = 1:No
+        in(:,no) = sqrt(sum((x(:,1:2,nt)-[xo1(no),xo2(no)]).^2,2)) < d;
+    end
 
     mode1 = x(:,4,nt-1) == 1;
     mode2 = x(:,4,nt-1) == 2;
     mode3 = x(:,4,nt-1) == 3;
 
     x(:,4,nt) = x(:,4,nt-1);
-    x(~in & (mode2 | mode3),4,nt) = 1;
-    x(dtheta<0 & dtheta>=-pi & in & mode1,4,nt) = 2;
-    x(dtheta<pi & dtheta>=0 & in & mode1,4,nt) = 3;
+    x(~sum(in,2) & (mode2 | mode3),4,nt) = 1;
+    
+    [Ind1,~] = find(in & mode1);
+    x(Ind1(dtheta(in & mode1)<0 & dtheta(in & mode1)>=-pi),4,nt) = 2;
+    x(Ind1(dtheta(in & mode1)>=0 & dtheta(in & mode1)<pi),4,nt) = 3;
 end
 
 % convert sample to density
@@ -78,13 +84,17 @@ for nt = 1:Nt
 end
 
 % plot
-for nt = 1:Nt
+for nt = 1:4:Nt
     figure;
     plot(x3,reshape(sum(sum(sum(fx(:,:,:,:,nt)*L1/N1*L2/N2,1),2),4),[],1,1));
 end
 
-for nt = 1:Nt
-    figure;
+for nt = 1:4:Nt
+    figure; hold on;
+    for no = 1:No
+        scatter3(xo1(no),xo2(no),1,'Marker','o','SizeData',20,'MarkerFaceColor','k','MarkerEdgeColor','k');
+        plot3(xo1(no)+d*cos(0:0.01:2*pi),xo2(no)+d*sin(0:0.01:2*pi),ones(1,length(0:0.01:2*pi)),'Color','k','LineWidth',3);
+    end
     surf(x1,x2,sum(sum(fx(:,:,:,:,nt)*2*pi/N3,3),4)');
     view([0,0,1]);
 end
@@ -94,6 +104,9 @@ parameter.x1 = x1;
 parameter.x2 = x2;
 parameter.x3 = x3;
 parameter.t = t;
+parameter.xo1 = xo1;
+parameter.xo2 = xo2;
+parameter.d = d;
 save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'parameter','fx');
 
 rmpath('..\..\lib');
