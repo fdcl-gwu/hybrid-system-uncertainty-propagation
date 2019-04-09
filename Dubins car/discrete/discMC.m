@@ -4,8 +4,9 @@ rng('shuffle');
 addpath('..\..\lib');
 
 % parameters
-xo1 = 0;
-xo2 = -0.5;
+xo1 = [0,-1.5,1.5];
+xo2 = [0.5,1,1];
+No = length(xo1);
 d = 0.5;
 nSample = 100000;
 
@@ -18,7 +19,7 @@ N3 = 50;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
 
 % initial conditions
-x1_0 = 0; x2_0 = -1;
+x1_0 = 0; x2_0 = 0;
 sigma1_0 = 0.2; sigma2_0 = 0.2;
 x3_0 = pi/2;
 k_0 = 20;
@@ -34,16 +35,21 @@ x(:,4,1) = ones(nSample,1)*s_0;
 % propagate samples
 theta = atan2(xo2-x(:,2,1),xo1-x(:,1,1));
 dtheta = wrapToPi(theta-x(:,3,1));
-in = sqrt(sum((x(:,1:2,1)-[xo1,xo2]).^2,2)) < d;
+in = false(nSample,No);
+for no = 1:No
+    in(:,no) = sqrt(sum((x(:,1:2,1)-[xo1(no),xo2(no)]).^2,2)) < d;
+end
 
 mode1 = x(:,4,1) == 1;
 mode2 = x(:,4,1) == 2;
 mode3 = x(:,4,1) == 3;
 
-x(:,:,2) = x(:,:,1);
-x(~in & (mode2 | mode3),4,2) = 1;
-x(dtheta<0 & dtheta>=-pi & in & mode1,4,2) = 2;
-x(dtheta<pi & dtheta>=0 & in & mode1,4,2) = 3;
+x(:,4,2) = x(:,4,1);
+x(~sum(in,2) & (mode2 | mode3),4,2) = 1;
+
+[Ind1,~] = find(in & mode1);
+x(Ind1(dtheta(in & mode1)<0 & dtheta(in & mode1)>=-pi),4,2) = 2;
+x(Ind1(dtheta(in & mode1)>=0 & dtheta(in & mode1)<pi),4,2) = 3;
 
 % probability of each mode
 p(1) = nnz(x(:,4,2)==1)/nSample;

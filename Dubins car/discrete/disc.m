@@ -2,8 +2,9 @@ function [ p, fx ] = disc(  )
 close all;
 
 % parameters
-xo1 = 0;
-xo2 = -0.5;
+xo1 = [0,-1.5,1.5];
+xo2 = [0.5,1,1];
+No = length(xo1);
 d = 0.5;
 epsilon = 1e6;
 
@@ -17,7 +18,7 @@ x3 = linspace(-pi,pi-2*pi/N3,N3);
 dt = 0.025;
 
 % initial conditions
-x1_0 = 0; x2_0 = -1;
+x1_0 = 0; x2_0 = 0;
 sigma1_0 = 0.2; sigma2_0 = 0.2;
 x3_0 = pi/2;
 k_0 = 20;
@@ -30,14 +31,22 @@ fx(:,:,:,s_0,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1,1)-x1_0).^2/
     (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x3,1,1,[])-x3_0)));
 
 % rate and kernel functions
-thetao = atan2(xo2-x2,xo1-x1');
-[G1_1,G1_2,G1_3] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1).^2+(x2-xo2).^2)<d &...
-    wrapToPi(thetao-reshape(x3,1,1,[]))>=0 &...
-    wrapToPi(thetao-reshape(x3,1,1,[])<pi)));
-[G2_1,G2_2,G2_3] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1).^2+(x2-xo2).^2)<d &...
-    wrapToPi(thetao-reshape(x3,1,1,[]))>=-pi &...
-    wrapToPi(thetao-reshape(x3,1,1,[])<0)));
-[G3_1,G3_2] = find(sqrt((x1'-xo1).^2+(x2-xo2).^2)>=d);
+G1_1 = cell(No,1); G1_2 = cell(No,1); G1_3 = cell(No,1);
+G2_1 = cell(No,1); G2_2 = cell(No,1); G2_3 = cell(No,1);
+for no = 1:No
+    thetao = atan2(xo2(no)-x2,xo1(no)-x1');
+    [G1_1{no},G1_2{no},G1_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))>=0 &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))<pi));
+    [G2_1{no},G2_2{no},G2_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))>=-pi &...
+        wrapToPi(thetao-reshape(x3,1,1,[]))<0));
+end
+G1_1 = cat(1,G1_1{:}); G1_2 = cat(1,G1_2{:}); G1_3 = cat(1,G1_3{:});
+G2_1 = cat(1,G2_1{:}); G2_2 = cat(1,G2_2{:}); G2_3 = cat(1,G2_3{:});
+[G3_1,G3_2] = find(sqrt((x1'-xo1(1)).^2+(x2-xo2(1)).^2)>=d &...
+    sqrt((x1'-xo1(2)).^2+(x2-xo2(2)).^2)>=d &...
+    sqrt((x1'-xo1(3)).^2+(x2-xo2(3)).^2)>=d);
 
 A = cell(3,1);
 A{1} = [-epsilon,0,0;0,0,0;epsilon,0,0];
