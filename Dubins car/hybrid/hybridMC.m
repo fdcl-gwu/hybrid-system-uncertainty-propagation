@@ -9,9 +9,12 @@ v = 1;
 u = [0,2,-2];
 sigma = 0.2;
 xo1 = [0,-1.5,1.5];
-xo2 = [0.5,1,1];
+xo2 = [0,1,1];
 No = length(xo1);
-d = 0.5;
+epsilonIn = 6;
+cIn = 400;
+epsilonOut = 0.3;
+cOut = 100;
 nSample = 100000;
 
 % grid
@@ -34,7 +37,7 @@ k_0 = 20;
 s_0 = 1;
 
 % draw samples from initial condition
-x = zeros(nSample,4,2);
+x = zeros(nSample,4,Nt);
 x(:,1,1) = normrnd(x1_0,sigma1_0,nSample,1);
 x(:,2,1) = normrnd(x2_0,sigma2_0,nSample,1);
 x(:,3,1) = vmrnd(x3_0,k_0,nSample);
@@ -53,21 +56,54 @@ for nt = 2:Nt
     % discrete
     theta = atan2(xo2-x(:,2,nt),xo1-x(:,1,nt));
     dtheta = wrapToPi(theta-x(:,3,nt));
-    in = false(nSample,No);
+
+    distance = zeros(nSample,No);
+    lamdaIn = zeros(nSample,3);
+    lamdaOut = cOut*ones(nSample,1);
     for no = 1:No
-        in(:,no) = sqrt(sum((x(:,1:2,nt)-[xo1(no),xo2(no)]).^2,2)) < d;
+        distance(:,no) = sqrt(sum((x(:,1:2,nt)-[xo1(no),xo2(no)]).^2,2));
+        lamdaIn(:,no) = cIn*exp(-distance(:,no)*epsilonIn);
+        lamdaOut = lamdaOut.*exp(-epsilonOut./distance(:,no));
     end
 
-    mode1 = x(:,4,nt-1) == 1;
-    mode2 = x(:,4,nt-1) == 2;
-    mode3 = x(:,4,nt-1) == 3;
+    % propagate samples
+    in(:,1) = poissrnd(lamdaIn(:,1)*dt);
+    in(:,2) = poissrnd(lamdaIn(:,2)*dt);
+    in(:,3) = poissrnd(lamdaIn(:,3)*dt);
+    out = poissrnd(lamdaOut*dt);
 
     x(:,4,nt) = x(:,4,nt-1);
-    x(~sum(in,2) & (mode2 | mode3),4,nt) = 1;
-    
-    [Ind1,~] = find(in & mode1);
-    x(Ind1(dtheta(in & mode1)<0 & dtheta(in & mode1)>=-pi),4,nt) = 2;
-    x(Ind1(dtheta(in & mode1)>=0 & dtheta(in & mode1)<pi),4,nt) = 3;
+    parfor ns = 1:nSample
+        timeIn1 = rand(1,in(ns,1));
+        timeIn2 = rand(1,in(ns,2));
+        timeIn3 = rand(1,in(ns,3));
+        timeOut = rand(1,out(ns));
+        time = [timeIn1,timeIn2,timeIn3,timeOut
+            1*ones(1,length(timeIn1)),2*ones(1,length(timeIn2)),3*ones(1,length(timeIn3)),4*ones(1,length(timeOut))];
+        [~,ind] = sort(time(1,:));
+        time = time(:,ind);
+
+        if isempty(timeOut)
+            if x(ns,4,nt) == 1 && ~isempty(time)
+                if dtheta(ns,time(2,1))<0 && dtheta(ns,time(2,1))>=-pi
+                    x(ns,4,nt) = 2;
+                else
+                    x(ns,4,nt) = 3;
+                end
+            end
+        else
+            if time(2,end) == 4
+                x(ns,4,nt) = 1;
+            else
+                lastOutIndex = find(time(2,:)==4,1,'last');
+                if dtheta(ns,time(2,lastOutIndex+1))<0 && dtheta(ns,time(2,lastOutIndex+1))>=-pi
+                    x(ns,4,nt) = 2;
+                else
+                    x(ns,4,nt) = 3;
+                end
+            end
+        end
+    end
 end
 
 % convert sample to density
@@ -93,7 +129,7 @@ for nt = 1:4:Nt
     figure; hold on;
     for no = 1:No
         scatter3(xo1(no),xo2(no),1,'Marker','o','SizeData',20,'MarkerFaceColor','k','MarkerEdgeColor','k');
-        plot3(xo1(no)+d*cos(0:0.01:2*pi),xo2(no)+d*sin(0:0.01:2*pi),ones(1,length(0:0.01:2*pi)),'Color','k','LineWidth',3);
+        plot3(xo1(no)+0.5*cos(0:0.01:2*pi),xo2(no)+0.5*sin(0:0.01:2*pi),ones(1,length(0:0.01:2*pi)),'Color','k','LineWidth',3);
     end
     surf(x1,x2,sum(sum(fx(:,:,:,:,nt)*2*pi/N3,3),4)');
     view([0,0,1]);
@@ -106,7 +142,6 @@ parameter.x3 = x3;
 parameter.t = t;
 parameter.xo1 = xo1;
 parameter.xo2 = xo2;
-parameter.d = d;
 save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'parameter','fx');
 
 rmpath('..\..\lib');

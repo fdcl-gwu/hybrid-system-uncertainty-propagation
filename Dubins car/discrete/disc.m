@@ -5,8 +5,10 @@ close all;
 xo1 = [0,-1.5,1.5];
 xo2 = [0.5,1,1];
 No = length(xo1);
-d = 0.5;
-epsilon = 1e6;
+epsilonIn = 6;
+cIn = 400;
+epsilonOut = 0.3;
+cOut = 100;
 
 % grid
 N1 = 100; N2 = 100;
@@ -31,46 +33,57 @@ fx(:,:,:,s_0,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1,1)-x1_0).^2/
     (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x3,1,1,[])-x3_0)));
 
 % rate and kernel functions
-G1_1 = cell(No,1); G1_2 = cell(No,1); G1_3 = cell(No,1);
-G2_1 = cell(No,1); G2_2 = cell(No,1); G2_3 = cell(No,1);
+distance = zeros(N1,N2,No);
+theta = zeros(N1,N2,No);
 for no = 1:No
-    thetao = atan2(xo2(no)-x2,xo1(no)-x1');
-    [G1_1{no},G1_2{no},G1_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
-        wrapToPi(thetao-reshape(x3,1,1,[]))>=0 &...
-        wrapToPi(thetao-reshape(x3,1,1,[]))<pi));
-    [G2_1{no},G2_2{no},G2_3{no}] = ind2sub([N1,N2,N3],find(sqrt((x1'-xo1(no)).^2+(x2-xo2(no)).^2)<d &...
-        wrapToPi(thetao-reshape(x3,1,1,[]))>=-pi &...
-        wrapToPi(thetao-reshape(x3,1,1,[]))<0));
-end
-G1_1 = cat(1,G1_1{:}); G1_2 = cat(1,G1_2{:}); G1_3 = cat(1,G1_3{:});
-G2_1 = cat(1,G2_1{:}); G2_2 = cat(1,G2_2{:}); G2_3 = cat(1,G2_3{:});
-[G3_1,G3_2] = find(sqrt((x1'-xo1(1)).^2+(x2-xo2(1)).^2)>=d &...
-    sqrt((x1'-xo1(2)).^2+(x2-xo2(2)).^2)>=d &...
-    sqrt((x1'-xo1(3)).^2+(x2-xo2(3)).^2)>=d);
-
-A = cell(3,1);
-A{1} = [-epsilon,0,0;0,0,0;epsilon,0,0];
-A{2} = [-epsilon,0,0;epsilon,0,0;0,0,0];
-A{3} = [0,epsilon,epsilon;0,-epsilon,0;0,0,-epsilon];
-expA = cellfun(@(x)expm(x*dt),A,'UniformOutput',false);
-
-% propagation
-for i = 1:length(G1_1)
-    fx(G1_1(i),G1_2(i),G1_3(i),:,2) = ...
-        reshape(expA{1}*reshape(fx(G1_1(i),G1_2(i),G1_3(i),:,1),[],1),1,1,1,[]);
+    distance(:,:,no) = sqrt((xo1(no)-x1').^2+(xo2(no)-x2).^2);
+    theta(:,:,no) = atan2(xo2(no)-x2,xo1(no)-x1');
 end
 
-for i = 1:length(G2_1)
-    fx(G2_1(i),G2_2(i),G2_3(i),:,2) = ...
-        reshape(expA{2}*reshape(fx(G2_1(i),G2_2(i),G2_3(i),:,1),[],1),1,1,1,[]);
-end
-
-for i = 1:length(G3_1)
-    for n3 = 1:N3
-        fx(G3_1(i),G3_2(i),n3,:,2) = ...
-            reshape(expA{3}*reshape(fx(G3_1(i),G3_2(i),n3,:,1),[],1),1,1,1,[]);
+lamdaIn = zeros(N1,N2,3);
+for n1 = 1:N1
+    for n2 = 1:N2
+        lamdaIn(n1,n2,1) = cIn*exp(-distance(n1,n2,1)*epsilonIn);
+        lamdaIn(n1,n2,2) = cIn*exp(-distance(n1,n2,2)*epsilonIn);
+        lamdaIn(n1,n2,3) = cIn*exp(-distance(n1,n2,3)*epsilonIn);
     end
 end
+
+lamdaOut = zeros(N1,N2);
+for n1 = 1:N1
+    for n2 = 1:N2
+        lamdaOut(n1,n2) = cOut*(exp(-epsilonOut/distance(n1,n2,1)) * ...
+            exp(-epsilonOut/distance(n1,n2,2)) * ...
+            exp(-epsilonOut/distance(n1,n2,3)));
+    end
+end
+
+expA = cell(N1,N2,N3);
+parfor n1 = 1:N1
+    for n2 = 1:N2
+        for n3 = 1:N3
+            t1 = wrapToPi(theta(n1,n2,1)-x3(n3))<0 && wrapToPi(theta(n1,n2,1)-x3(n3))>=-pi;
+            t2 = wrapToPi(theta(n1,n2,2)-x3(n3))<0 && wrapToPi(theta(n1,n2,2)-x3(n3))>=-pi;
+            t3 = wrapToPi(theta(n1,n2,3)-x3(n3))<0 && wrapToPi(theta(n1,n2,3)-x3(n3))>=-pi;
+            A = [-sum(lamdaIn(n1,n2,:),3),lamdaOut(n1,n2),lamdaOut(n1,n2)
+                 sum(reshape(lamdaIn(n1,n2,:),1,[]).*[t1,t2,t3]),-lamdaOut(n1,n2),0
+                 sum(reshape(lamdaIn(n1,n2,:),1,[]).*[~t1,~t2,~t3]),0,-lamdaOut(n1,n2)];
+            expA{n1,n2,n3} = expm(A*dt);
+        end
+    end
+end
+
+% propagation
+temp = zeros(N1,N2,N3,3);
+parfor n1 = 1:N1
+    for n2 = 1:N2
+        for n3 = 1:N3
+            temp(n1,n2,n3,:) = ...
+                reshape(expA{n1,n2,n3}*reshape(fx(n1,n2,n3,:,1),[],1),1,1,1,[]);
+        end
+    end
+end
+fx(:,:,:,:,2) = temp;
 
 p(1) = sum(sum(sum(fx(:,:,:,1,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
 p(2) = sum(sum(sum(fx(:,:,:,2,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
