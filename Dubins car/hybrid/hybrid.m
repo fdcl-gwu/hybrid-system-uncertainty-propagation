@@ -1,33 +1,34 @@
-function [ fx, y ] = hybrid(  )
+function [ fx ] = hybrid(  )
 
 close all;
 addpath('..','..\..\lib');
 
+p = getParameter(1);
 % parameters
-v = 1;
-u = [0,2,-2];
-sigma = 0.2;
-xo1 = [0,-1.5,1.5];
-xo2 = [0,1,1];
+v = p.v;
+u = p.u;
+sigma = p.sigma;
+xo1 = p.xo1;
+xo2 = p.xo2;
 No = length(xo1);
 
 % grid
-N1 = 100; N2 = 100;
-L1 = 6; L2 = 6;
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
 x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
-N3 = 50;
+N3 = p.N3;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
-Nt = 161;
-Lt = 4;
+Nt = p.Nt;
+Lt = p.Lt;
 t = linspace(0,Lt,Nt);
 
 % initial conditions
-x1_0 = 0; x2_0 = -2;
-sigma1_0 = 0.2; sigma2_0 = 0.2;
-x3_0 = pi/2;
-k_0 = 20;
-s_0 = 1;
+x1_0 = p.x1_0; x2_0 = p.x2_0;
+sigma1_0 = p.sigma1_0; sigma2_0 = p.sigma2_0;
+x3_0 = p.x3_0;
+k_0 = p.k_0;
+s_0 = p.s_0;
 
 % initial distribution
 fx = zeros(N1,N2,N3,3,Nt);
@@ -36,13 +37,13 @@ fx(:,:,:,s_0,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1,1)-x1_0).^2/
     (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x3,1,1,[])-x3_0)));
 
 % Fourier transform of initial distribution
-y = zeros(N1,N2,N3,3,Nt);
+y = zeros(N1,N2,N3,3);
 shift1 = reshape((-1).^((0:N1-1)-N1/2),[],1,1);
 shift2 = reshape((-1).^((0:N2-1)-N2/2),1,[],1);
 shift3 = reshape((-1).^((0:N3-1)-N3/2),1,1,[]);
 for s = 1:3
-    y(:,:,:,s,1) = fftshift(fftn(fx(:,:,:,s,1)))/N1/N2/N3;
-    y(:,:,:,s,1) = y(:,:,:,s,1).*shift1.*shift2.*shift3;
+    y(:,:,:,s) = fftshift(fftn(fx(:,:,:,s)))/N1/N2/N3;
+    y(:,:,:,s) = y(:,:,:,s).*shift1.*shift2.*shift3;
 end
 
 % Fourier transfor for sin(theta) and cos(theta)
@@ -120,14 +121,14 @@ for nt = 2:Nt
     for n1 = 1:N1
         for n2 = 1:N2
             for s = 1:3
-                y(n1,n2,:,s,nt) = reshape(expACont(:,:,n1,n2,s)*reshape(y(n1,n2,:,s,nt-1),[],1),1,1,[]);
+                y(n1,n2,:,s) = reshape(expACont(:,:,n1,n2,s)*reshape(y(n1,n2,:,s),[],1),1,1,[]);
             end
         end
     end
     
     % reconstruct density
     for s = 1:3
-        fx(:,:,:,s,nt) = ifftn(ifftshift(y(:,:,:,s,nt)./shift1./shift2./shift3*N1*N2*N3),'symmetric');
+        fx(:,:,:,s,nt) = ifftn(ifftshift(y(:,:,:,s)./shift1./shift2./shift3*N1*N2*N3),'symmetric');
     end
     
     % renormalize
@@ -145,8 +146,8 @@ for nt = 2:Nt
     
     % Fourier transform
     for s = 1:3
-        y(:,:,:,s,nt) = fftshift(fftn(fx(:,:,:,s,nt)))/N1/N2/N3;
-        y(:,:,:,s,nt) = y(:,:,:,s,nt).*shift1.*shift2.*shift3;
+        y(:,:,:,s) = fftshift(fftn(fx(:,:,:,s,nt)))/N1/N2/N3;
+        y(:,:,:,s) = y(:,:,:,s).*shift1.*shift2.*shift3;
     end
 end
 

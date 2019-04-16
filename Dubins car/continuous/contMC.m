@@ -1,34 +1,35 @@
 function [ fx, x ] = contMC( mode )
 close all;
-addpath('..\..\lib');
+addpath('..','..\..\lib');
 rng('shuffle');
 
+p = getParameter(1);
 % parameters
-v = 0.5;
-u = [0,0.5,-0.5];
-sigma = 0.2;
-nSample = 100000;
+v = p.v;
+u = p.u;
+sigma = p.sigma;
+nSample = p.nSample;
 if ~exist('mode','var') || isempty('mode')
     mode = 1;
 end
 
 % grid
-N1 = 50; N2 = 50;
-L1 = 6; L2 = 6;
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
 x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
-N3 = 50;
+N3 = p.N3;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
 Nt = 41;
-Lt = 4;
-dt = Lt/(Nt-1);
+Lt = 1;
 t = linspace(0,Lt,Nt);
+dt = Lt/(Nt-1);
 
 % initial conditions
-x1_0 = 0; x2_0 = -2;
-sigma1_0 = 0.2; sigma2_0 = 0.2;
-x3_0 = pi/2;
-k_0 = 20;
+x1_0 = p.x1_0; x2_0 = p.x2_0;
+sigma1_0 = p.sigma1_0; sigma2_0 = p.sigma2_0;
+x3_0 = p.x3_0;
+k_0 = p.k_0;
 
 % draw samples from initial condition
 x = zeros(nSample,3,Nt);
@@ -69,7 +70,7 @@ for nt = 1:Nt
     view([0,0,1]);
 end
 
-rmpath('..\..\lib');
+rmpath('..','..\..\lib');
 
 end
 

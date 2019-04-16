@@ -1,26 +1,27 @@
-function [ p, fx ] = disc(  )
+function [ prob, fx ] = disc(  )
 close all;
 addpath('..');
 
+p = getParameter(1);
 % parameters
-xo1 = [0,-1.5,1.5];
-xo2 = [0.5,1,1];
+xo1 = p.xo1;
+xo2 = p.xo2;
 No = length(xo1);
 
 % grid
-N1 = 100; N2 = 100;
-L1 = 6; L2 = 6;
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
 x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
-N3 = 50;
+N3 = p.N3;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
 dt = 0.025;
 
 % initial conditions
-x1_0 = 0; x2_0 = 0;
-sigma1_0 = 0.2; sigma2_0 = 0.2;
-x3_0 = pi/2;
-k_0 = 20;
+x1_0 = 0; x2_0 = -0.5;
+sigma1_0 = p.sigma1_0; sigma2_0 = p.sigma2_0;
+x3_0 = p.x3_0;
+k_0 = p.k_0;
 s_0 = 1;
 
 % initial distribution
@@ -71,9 +72,9 @@ parfor n1 = 1:N1
 end
 fx(:,:,:,:,2) = temp;
 
-p(1) = sum(sum(sum(fx(:,:,:,1,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
-p(2) = sum(sum(sum(fx(:,:,:,2,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
-p(3) = sum(sum(sum(fx(:,:,:,3,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
+prob(1) = sum(sum(sum(fx(:,:,:,1,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
+prob(2) = sum(sum(sum(fx(:,:,:,2,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
+prob(3) = sum(sum(sum(fx(:,:,:,3,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
 
 rmpath('..');
 

@@ -1,32 +1,33 @@
 function [ fx, y ] = cont( mode )
 
 close all;
-addpath('..\..\lib');
+addpath('..','..\..\lib');
 
+p = getParameter(1);
 % parameters
-v = 0.5;
-u = [0,0.5,-0.5];
-sigma = 0.2;
+v = p.v;
+u = p.u;
+sigma = p.sigma;
 if ~exist('mode','var') || isempty('mode')
     mode = 1;
 end
 
 % grid
-N1 = 50; N2 = 50;
-L1 = 6; L2 = 6;
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
 x1 = linspace(-L1/2,L1/2-L1/N1,N1);
 x2 = linspace(-L2/2,L2/2-L2/N2,N2);
-N3 = 50;
+N3 = p.N3;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
 Nt = 41;
-Lt = 4;
+Lt = 1;
 t = linspace(0,Lt,Nt);
 
 % initial conditions
-x1_0 = 0; x2_0 = -2;
-sigma1_0 = 0.2; sigma2_0 = 0.2;
-x3_0 = pi/2;
-k_0 = 20;
+x1_0 = p.x1_0; x2_0 = p.x2_0;
+sigma1_0 = p.sigma1_0; sigma2_0 = p.sigma2_0;
+x3_0 = p.x3_0;
+k_0 = p.k_0;
 
 % initial distribution
 fx = zeros(N1,N2,N3,Nt);
@@ -72,7 +73,7 @@ end
 
 % exponential of the coefficient matrix
 expA = zeros(N3,N3,N1,N2);
-for n1 = 1:N1
+parfor n1 = 1:N1
     for n2 = 1:N2
         expA(:,:,n1,n2) = expm(A(:,:,n1,n2)*Lt/(Nt-1));
     end
@@ -90,7 +91,7 @@ end
 
 % Inverse Fourier transform
 for nt = 2:Nt
-    fx(:,:,:,nt) = ifftn(ifftshift(y(:,:,:,nt)./shift1./shift2./shift3*n1*n2*n3),'symmetric');
+    fx(:,:,:,nt) = ifftn(ifftshift(y(:,:,:,nt)./shift1./shift2./shift3*N1*N2*N3),'symmetric');
 end
 
 % plot
@@ -105,7 +106,7 @@ for nt = 1:Nt
     view([0,0,1]);
 end
 
-rmpath('..\..\lib');
+rmpath('..','..\..\lib');
 
 end
 
