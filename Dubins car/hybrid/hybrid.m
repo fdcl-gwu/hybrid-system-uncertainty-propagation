@@ -1,7 +1,7 @@
 function [ fx, y ] = hybrid(  )
 
 close all;
-addpath('..\..\lib');
+addpath('..','..\..\lib');
 
 % parameters
 v = 1;
@@ -10,10 +10,6 @@ sigma = 0.2;
 xo1 = [0,-1.5,1.5];
 xo2 = [0,1,1];
 No = length(xo1);
-epsilonIn = 6;
-cIn = 400;
-epsilonOut = 0.3;
-cOut = 100;
 
 % grid
 N1 = 100; N2 = 100;
@@ -80,7 +76,7 @@ for s = 1:3
 end
 
 expACont = zeros(N3,N3,N1,N2,3);
-for s = 1:3
+parfor s = 1:3
     for n1 = 1:N1
         for n2 = 1:N2
             expACont(:,:,n1,n2,s) = expm(ACont(:,:,n1,n2,s)*Lt/(Nt-1));
@@ -90,32 +86,20 @@ end
 clear ACont;
 
 % coefficients discrete propagation
-distance = zeros(N1,N2,No);
 theta = zeros(N1,N2,No);
 for no = 1:No
-    distance(:,:,no) = sqrt((xo1(no)-x1').^2+(xo2(no)-x2).^2);
     theta(:,:,no) = atan2(xo2(no)-x2,xo1(no)-x1');
 end
 
 lamdaIn = zeros(N1,N2,3);
-for n1 = 1:N1
-    for n2 = 1:N2
-        lamdaIn(n1,n2,1) = cIn*exp(-distance(n1,n2,1)*epsilonIn);
-        lamdaIn(n1,n2,2) = cIn*exp(-distance(n1,n2,2)*epsilonIn);
-        lamdaIn(n1,n2,3) = cIn*exp(-distance(n1,n2,3)*epsilonIn);
-    end
-end
-
 lamdaOut = zeros(N1,N2);
-for n1 = 1:N1
-    for n2 = 1:N2
-        lamdaOut(n1,n2) = cOut*(exp(-epsilonOut/distance(n1,n2,1)) * ...
-            exp(-epsilonOut/distance(n1,n2,2)) * ...
-            exp(-epsilonOut/distance(n1,n2,3)));
-    end
+for n2 = 1:N2
+    lamda = getLamda(x1',ones(N2,1)*x2(n2),xo1,xo2);
+    lamdaIn(:,n2,:) = reshape(lamda(:,1:3),N1,1,No);
+    lamdaOut(:,n2) = lamda(:,4);
 end
 
-expA = cell(N1,N2,N3);
+expADist = cell(N1,N2,N3);
 parfor n1 = 1:N1
     for n2 = 1:N2
         for n3 = 1:N3
@@ -125,7 +109,7 @@ parfor n1 = 1:N1
             A = [-sum(lamdaIn(n1,n2,:),3),lamdaOut(n1,n2),lamdaOut(n1,n2)
                  sum(reshape(lamdaIn(n1,n2,:),1,[]).*[t1,t2,t3]),-lamdaOut(n1,n2),0
                  sum(reshape(lamdaIn(n1,n2,:),1,[]).*[~t1,~t2,~t3]),0,-lamdaOut(n1,n2)];
-            expA{n1,n2,n3} = expm(A*Lt/(Nt-1));
+            expADist{n1,n2,n3} = expm(A*Lt/(Nt-1));
         end
     end
 end
@@ -154,7 +138,7 @@ for nt = 2:Nt
         for n2 = 1:N2
             for n3 = 1:N3
                 fx(n1,n2,n3,:,nt) = ...
-                    reshape(expA{n1,n2,n3}*reshape(fx(n1,n2,n3,:,nt),[],1),1,1,1,[]);
+                    reshape(expADist{n1,n2,n3}*reshape(fx(n1,n2,n3,:,nt),[],1),1,1,1,[]);
             end
         end
     end
@@ -191,7 +175,7 @@ parameter.xo1 = xo1;
 parameter.xo2 = xo2;
 save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'parameter','fx');
 
-rmpath('..\..\lib');
+rmpath('..','..\..\lib');
 
 end
 

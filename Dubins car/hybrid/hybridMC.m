@@ -2,7 +2,7 @@ function [ fx, x ] = hybridMC(  )
 
 close all;
 rng('shuffle');
-addpath('..\..\lib');
+addpath('..','..\..\lib');
 
 % parameters
 v = 1;
@@ -11,10 +11,6 @@ sigma = 0.2;
 xo1 = [0,-1.5,1.5];
 xo2 = [0,1,1];
 No = length(xo1);
-epsilonIn = 6;
-cIn = 400;
-epsilonOut = 0.3;
-cOut = 100;
 nSample = 100000;
 
 % grid
@@ -57,14 +53,9 @@ for nt = 2:Nt
     theta = atan2(xo2-x(:,2,nt),xo1-x(:,1,nt));
     dtheta = wrapToPi(theta-x(:,3,nt));
 
-    distance = zeros(nSample,No);
-    lamdaIn = zeros(nSample,3);
-    lamdaOut = cOut*ones(nSample,1);
-    for no = 1:No
-        distance(:,no) = sqrt(sum((x(:,1:2,nt)-[xo1(no),xo2(no)]).^2,2));
-        lamdaIn(:,no) = cIn*exp(-distance(:,no)*epsilonIn);
-        lamdaOut = lamdaOut.*exp(-epsilonOut./distance(:,no));
-    end
+    lamda = getLamda(x(:,1,nt),x(:,2,nt),xo1,xo2);
+    lamdaIn = lamda(:,1:3);
+    lamdaOut = lamda(:,4);
 
     % propagate samples
     in(:,1) = poissrnd(lamdaIn(:,1)*dt);
@@ -144,7 +135,7 @@ parameter.xo1 = xo1;
 parameter.xo2 = xo2;
 save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'parameter','fx');
 
-rmpath('..\..\lib');
+rmpath('..','..\..\lib');
 
 end
 

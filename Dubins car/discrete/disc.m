@@ -1,14 +1,11 @@
 function [ p, fx ] = disc(  )
 close all;
+addpath('..');
 
 % parameters
 xo1 = [0,-1.5,1.5];
 xo2 = [0.5,1,1];
 No = length(xo1);
-epsilonIn = 6;
-cIn = 400;
-epsilonOut = 0.3;
-cOut = 100;
 
 % grid
 N1 = 100; N2 = 100;
@@ -32,30 +29,19 @@ fx(:,:,:,s_0,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1,1)-x1_0).^2/
     (1/(sqrt(2*pi)*sigma2_0)*exp(-0.5*(reshape(x2,1,[],1)-x2_0).^2/sigma2_0^2)) .* ...
     (1/(2*pi*besseli(0,k_0))*exp(k_0*cos(reshape(x3,1,1,[])-x3_0)));
 
-% rate and kernel functions
-distance = zeros(N1,N2,No);
+% theta
 theta = zeros(N1,N2,No);
 for no = 1:No
-    distance(:,:,no) = sqrt((xo1(no)-x1').^2+(xo2(no)-x2).^2);
     theta(:,:,no) = atan2(xo2(no)-x2,xo1(no)-x1');
 end
 
+% rate and kernel functions
 lamdaIn = zeros(N1,N2,3);
-for n1 = 1:N1
-    for n2 = 1:N2
-        lamdaIn(n1,n2,1) = cIn*exp(-distance(n1,n2,1)*epsilonIn);
-        lamdaIn(n1,n2,2) = cIn*exp(-distance(n1,n2,2)*epsilonIn);
-        lamdaIn(n1,n2,3) = cIn*exp(-distance(n1,n2,3)*epsilonIn);
-    end
-end
-
 lamdaOut = zeros(N1,N2);
-for n1 = 1:N1
-    for n2 = 1:N2
-        lamdaOut(n1,n2) = cOut*(exp(-epsilonOut/distance(n1,n2,1)) * ...
-            exp(-epsilonOut/distance(n1,n2,2)) * ...
-            exp(-epsilonOut/distance(n1,n2,3)));
-    end
+for n2 = 1:N2
+    lamda = getLamda(x1',ones(N2,1)*x2(n2),xo1,xo2);
+    lamdaIn(:,n2,:) = reshape(lamda(:,1:3),N1,1,No);
+    lamdaOut(:,n2) = lamda(:,4);
 end
 
 expA = cell(N1,N2,N3);
@@ -88,6 +74,8 @@ fx(:,:,:,:,2) = temp;
 p(1) = sum(sum(sum(fx(:,:,:,1,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
 p(2) = sum(sum(sum(fx(:,:,:,2,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
 p(3) = sum(sum(sum(fx(:,:,:,3,2),1),2),3)*L1/N1*L2/N2*(2*pi)/N3;
+
+rmpath('..');
 
 end
 
