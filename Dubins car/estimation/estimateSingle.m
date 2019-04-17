@@ -165,8 +165,8 @@ for nt = 2:Nt
     % estimation
     xEst(nt,1) = sum(x1'.*sum(sum(sum(fx(:,:,:,:,nt),4),3),2)*L2/N2*(2*pi)/N3)*L1/N1;
     xEst(nt,2) = sum(x2'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),3),1),N2,1)*L1/N1*(2*pi)/N3)*L2/N2;
-    xEst(nt,3) = atan2(sum(cos(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3,...
-        sum(sin(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3);
+    xEst(nt,3) = atan2(sum(sin(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3,...
+        sum(cos(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3);
     [~,xEst(nt,4)] = max(reshape(sum(sum(sum(fx(:,:,:,:,nt),3),2),1)*L1/N1*L2/N2*(2*pi)/N3,3,1));
 end
 
