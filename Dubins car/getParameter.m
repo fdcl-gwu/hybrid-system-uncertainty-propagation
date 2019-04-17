@@ -5,8 +5,15 @@ if model == 1
     p.v = 1;
     p.u = [0,2,-2];
     p.sigma = 0.2;
+    
     p.xo1 = [0,-1.5,1.5];
     p.xo2 = [0,1,1];
+    
+    p.xL1 = 0;
+    p.xL2 = -3;
+    p.sigmaL = 0.5;
+    p.kL = 15;
+    
     p.nSample = 100000;
 
     % grid
