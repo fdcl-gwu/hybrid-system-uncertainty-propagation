@@ -135,7 +135,7 @@ for nt = 2:Nt
     fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/(sum(sum(sum(sum(fx(:,:,:,:,nt)))))*L1/N1*L2/N2*(2*pi)/N3);
     
     % discrete
-    parfor n1 = 1:N1
+    for n1 = 1:N1
         for n2 = 1:N2
             for n3 = 1:N3
                 fx(n1,n2,n3,:,nt) = ...
