@@ -40,9 +40,11 @@ end
 % reconstruct density
 fx = zeros(nx,nt);
 for i = 1:nt
-    for j = 1:nx
-        fx(j,i) = sum(s(:,i)>=x(j)-Lx/nx/2 & s(:,i)<x(j)+Lx/nx/2)/nSample*nx/Lx;
+    for j = 1:nSample
+        [~,index] = min(abs(s(j,i)-x));
+        fx(index,i) = fx(index,i)+1;
     end
+    fx(:,i) = fx(:,i)/nSample*nx/Lx;
 end
 
 % plot

@@ -1,7 +1,7 @@
 function [fx] = hybrid()
 
 close all;
-addpath('..\lib');
+addpath('..\..\lib');
 tic;
 
 % parameters
@@ -174,6 +174,6 @@ parameter.sigma0 = sigma0;
 
 save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx','simulT');
 
-rmpath('..\lib');
+rmpath('..\..\lib');
 
 end

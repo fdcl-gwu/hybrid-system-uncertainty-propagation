@@ -28,11 +28,13 @@ x(~index,:,2) = x(~index,:,1);
 % density approximation
 fx = zeros(n1,n2,2);
 for i = 1:2
-    fx1 = x(:,1,i)>repmat(x1'-L1/n1/2,nSample,1) & x(:,1,i)<=repmat(x1'+L1/n1/2,nSample,1);
-    fx2 = x(:,2,i)>repmat(x2-L2/n2/2,nSample,1) & x(:,2,i)<=repmat(x2+L2/n2/2,nSample,1);
-    parfor j = 1:n1
-        fx(j,:,i) = sum(fx1(:,j) & fx2)/nSample*n1*n2/L1/L2;
+    for j = 1:nSample
+        [~,index1] = min(abs(x(j,1,i)-x1));
+        [~,index2] = min(abs(x(j,2,i)-x2));
+        
+        fx(index1,index2,i) = fx(index1,index2,i)+1;
     end
+    fx(:,:,i) = fx(:,:,i)/nSample*n1*n2/L1/L2;
 end
 
 % plot
