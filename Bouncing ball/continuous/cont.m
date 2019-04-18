@@ -1,106 +1,104 @@
 function [fx] = cont()
 close all;
-addpath('..\..\lib');
+addpath('..','..\..\lib');
 
+p = getParameter(1);
 % parameters
-g = 9.8;
-niu = 0.05;
-sigma = 0.01;
-x0 = [1.5;0];
-sigma0 = [0.2^2,0;0,0.5^2];
+g = p.g;
+niu = p.niu;
+sigma = p.sigma;
+x0 = p.x0;
+sigma0 = p.sigma0;
 
 % grid
-n1 = 100; n2 = 100;
-L1 = 5; L2 = 16;
-x1 = linspace(-L1/2,L1/2-L1/n1,n1);
-x2 = linspace(-L2/2,L2/2-L2/n2,n2);
-nt = 41;
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
+x1 = linspace(-L1/2,L1/2-L1/N1,N1);
+x2 = linspace(-L2/2,L2/2-L2/N2,N2);
+Nt = 41;
 Lt = 1;
-t = linspace(0,Lt,nt);
+t = linspace(0,Lt,Nt);
 
 % initial density function
 f0 = @(x)1/(2*pi)/sqrt(det(sigma0))*exp(-1/2*(x-x0)'*sigma0^-1*(x-x0));
-fx = zeros(n1,n2,nt);
-for i = 1:n1
-    for j = 1:n2
-        fx(i,j,1) = f0([x1(i);x2(j)]);
+fx = zeros(N1,N2,Nt);
+for n1 = 1:N1
+    for n2 = 1:N2
+        fx(n1,n2,1) = f0([x1(n1);x2(n2)]);
     end
 end
 
 % initial fft
-shift1 = (-1).^((0:n1-1)-floor(n1/2)).';
-shift2 = (-1).^((0:n2-1)-floor(n2/2));
-y = zeros(n1,n2,nt);
-y(:,:,1) = fftshift(fft2(fx(:,:,1)))/n1/n2;
+shift1 = (-1).^((0:N1-1)-floor(N1/2)).';
+shift2 = (-1).^((0:N2-1)-floor(N2/2));
+y = zeros(N1,N2,Nt);
+y(:,:,1) = fftshift(fft2(fx(:,:,1)))/N1/N2;
 y(:,:,1) = shift1.*shift2.*y(:,:,1);
 
 % fft for f(x)=x and f(x)=x^2
-y_x = fftshift(fft(x2))/n2;
+y_x = fftshift(fft(x2))/N2;
 y_x = shift2.*y_x;
-y_xsqr = fftshift(fft(x2.*abs(x2)))/n2;
+y_xsqr = fftshift(fft(x2.*abs(x2)))/N2;
 y_xsqr = shift2.*y_xsqr;
-y_xfour = fftshift(fft(x2.^4))/n2;
+y_xfour = fftshift(fft(x2.^4))/N2;
 y_xfour = shift2.*y_xfour;
 
-% propagation
-y0 = y(:,:,1);
-parfor m = 1:n1
-    A = zeros(n2,n2);
-    M = m-1-floor(n1/2);
-    for i = 2:nt
-        for n = 1:n2
-            N = n-1-floor(n2/2);
-            for k = 1:n2
-                K = k-1-floor(n2/2);
-                NMinusK = wrapDFT(N-K,n2);
-                nMinusk = NMinusK+1+floor(n2/2);
-                
-                if m == 1 && mod(n1,2) == 0
-                    part1 = 0;
-                else
-                    part1 = -2*pi*1i*M/L1*y_x(k);
-                end
-                
-                if n == 1 && mod(n2,2) == 0
-                    part2 = 0;
-                else
-                    if K == 0
-                        part2 = 2*pi*1i*N/L2*g + 2*pi*1i*N/L2*niu*y_xsqr(k);
-                    else
-                        part2 = 2*pi*1i*N/L2*niu*y_xsqr(k);
-                    end
-                end
-                
-                part3 = -2*sigma^2*pi^2*N^2/L2^2*y_xfour(k);
-                
-                A(n,nMinusk) = part1 + part2 + part3;
+% coefficients of approximated systems
+A = zeros(N2,N2,N1);
+for n1 = 1:N1
+    for n2 = 1:N2
+        for m2 = 1:N2
+            n2Minusm2 = wrapDFT(n2-m2,N2)+1+N2/2;
+            
+            if n1 == 1
+                part1 = 0;
+            else
+                part1 = -2*pi*1i*(n1-1-N1/2)/L1*y_x(m2);
             end
+            
+            if n2 == 2
+                part2 = 0;
+            else
+                if m2-1-N2/2 == 0
+                    part2 = 2*pi*1i*(n2-1-N2/2)/L2*g + 2*pi*1i*(n2-1-N2/2)/L2*niu*y_xsqr(m2);
+                else
+                    part2 = 2*pi*1i*(n2-1-N2/2)/L2*niu*y_xsqr(m2);
+                end
+            end
+            
+            part3 = -2*sigma^2*pi^2*(n2-1-N2/2)^2/L2^2*y_xfour(m2);
+            
+            A(n2,n2Minusm2,n1) = part1 + part2 + part3;
         end
-        y(m,:,i) = (expm(A*(i-1)*Lt/(nt-1))*y0(m,:).').';
+    end
+end
+
+expA = zeros(N2,N2,N1);
+for n1 = 1:N1
+    expA(:,:,n1) = expm(A(:,:,n1)*Lt/(Nt-1));
+end
+clear A;
+
+% propagation
+for nt = 2:Nt
+    for n1 = 1:N1
+        y(n1,:,nt) = (expA(:,:,n1)*y(n1,:,nt-1).').';
     end
 end
 
 % reconstruct density
-fraq1 = ((0:n1-1)'-floor(n1/2))/L1;
-fraq2 = ((0:n2-1)-floor(n2/2))/L2;
-
-f_fft = @(x,y)sum(sum(y.*exp(1i*fraq1*2*pi*x(1)).*exp(1i*fraq2*2*pi*x(2))));
-parfor k = 2:nt
-    for i = 1:n1
-        for j = 1:n2
-            fx(i,j,k) = real(f_fft([x1(i);x2(j)],y(:,:,k)));
-        end
-    end
+parfor nt = 2:Nt
+    fx(:,:,nt) = ifftn(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
 end
 
 % plot
-for i = 1:nt
-figure;
-surf(x2,x1,fx(:,:,i));
-view([0,0,1]);
+for n1 = 1:Nt
+    figure;
+    surf(x2,x1,fx(:,:,n1));
+    view([0,0,1]);
 end
 
-rmpath('..\..\lib');
+rmpath('..','..\..\lib');
 
 end
 

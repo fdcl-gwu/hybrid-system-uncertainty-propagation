@@ -2,35 +2,37 @@ function [fx] = hybridMC()
 
 close all;
 rng('shuffle');
+addpath('..');
 tic;
 
+p = getParameter(1);
 % parameters
-g = 9.8;                                    % Gravity constant
-niu = 0.05;                                 % Air drag coefficient
-sigmaNiu = 0.01;                            % standard deviation of air drag coefficient
-c = 0.95;                                   % coefficient of restitution
-sigmaV = 0.5;                               % standard deviation for velocity reset
-x0 = [1.5;0];                               % initial condition
-sigma0 = [0.2^2,0;0,0.5^2];                 % covariance matrix of initial condition
-nSample = 1000000;                          % sample size
+g = p.g;                                    % Gravity constant
+niu = p.niu;                                % Air drag coefficient
+sigmaNiu = p.sigma;                         % standard deviation of air drag coefficient
+c = p.c;                                    % coefficient of restitution
+sigmaV = p.sigmaV;                          % standard deviation for velocity reset
+x0 = p.x0;                                  % initial condition
+sigma0 = p.sigma0;                          % covariance matrix of initial condition
+nSample = p.nSample;                        % sample size
 
 % grid
-n1 = 100; n2 = 50;
-L1 = 5; L2 = 16;
-x1 = linspace(-L1/2,L1/2-L1/n1,n1).'; x1(abs(x1)<1e-10) = 0;
-x2 = linspace(-L2/2,L2/2-L2/n2,n2); x2(abs(x2)<1e-10) = 0;
-nt = 241;
-Lt = 6; dt = Lt/(nt-1);
-t = linspace(0,Lt,nt);
+N1 = p.N1; N2 = p.N2;
+L1 = p.L1; L2 = p.L2;
+x1 = linspace(-L1/2,L1/2-L1/N1,N1).'; x1(abs(x1)<1e-10) = 0;
+x2 = linspace(-L2/2,L2/2-L2/N2,N2); x2(abs(x2)<1e-10) = 0;
+Nt = p.Nt;
+Lt = p.Lt; dt = Lt/(Nt-1);
+t = linspace(0,Lt,Nt);
 
 % state variable
-x = zeros(nSample,2,nt);
+x = zeros(nSample,2,Nt);
 
 % draw samples from initial density
 x(:,:,1) = mvnrnd(x0,sigma0,nSample);
 
 % sample propagation
-for i = 2:nt
+for i = 2:Nt
     Bt = randn(nSample,1);
     x(:,2,i) = x(:,2,i-1) - (g+niu*x(:,2,i-1).*abs(x(:,2,i-1)))*dt + sigmaNiu*x(:,2,i-1).*abs(x(:,2,i-1)).*Bt*sqrt(dt);
     x(:,1,i) = x(:,1,i-1) + (x(:,2,i)+x(:,2,i-1))/2*dt;
@@ -41,22 +43,22 @@ for i = 2:nt
 end
 
 % density approximation
-fx = zeros(n1,n2,nt);
-for i = 1:nt
+fx = zeros(N1,N2,Nt);
+for i = 1:Nt
     for j = 1:nSample
         [~,index1] = min(abs(x(j,1,i)-x1));
         [~,index2] = min(abs(x(j,2,i)-x2));
         
         fx(index1,index2,i) = fx(index1,index2,i)+1;
     end
-    fx(:,:,i) = fx(:,:,i)/nSample*n1*n2/L1/L2;
+    fx(:,:,i) = fx(:,:,i)/nSample*N1*N2/L1/L2;
     fprintf(strcat(num2str(i),'th iteration finished\n'));
 end
 
 simulT = toc;
 
 % plot
-for i = 1:nt
+for i = 1:Nt
     figure;
     surf(x2,x1,fx(:,:,i));
     view([0,0,1]);
@@ -73,5 +75,7 @@ parameter.sigma0 = sigma0;
 parameter.nSample = nSample;
 
 save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','x','fx','simulT','-v7.3');
+
+rmpath('..');
 
 end
