@@ -7,6 +7,7 @@ if model == 1
     p.sigma = 0.01;
     p.c = 0.95;
     p.sigmaV = 0.5;
+    p.sigmaM = 0.8;
     p.nSample = 1000000;
     
     % initial condition

@@ -41,10 +41,10 @@ for s = 1:3
     y(:,:,:,s) = y(:,:,:,s).*shift1.*shift2.*shift3;
 end
 
-% trun state
+% true state
 xTrue = generateSample(1);
 addpath('..','..\..\lib');
-xTrue = reshape(xTrue,4,161)';
+xTrue = reshape(xTrue,4,Nt)';
 
 % likelihood function and true measurement
 l = @(d,alpha,x1,x2) (1/sqrt(2*pi)/sigmaL)*exp(-(sqrt((x1-xL1)^2+(x2-xL2)^2)-d)^2/2/sigmaL^2) * ...
