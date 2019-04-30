@@ -127,7 +127,7 @@ for nt = 2:Nt
     end
     
     % reconstruct density
-    fx(:,:,nt) = ifftn(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
+    fx(:,:,nt) = ifft2(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
     
     temp = fx(:,:,nt);
     temp(fx(:,:,nt)<3e-3) = 0;

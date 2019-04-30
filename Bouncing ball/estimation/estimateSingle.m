@@ -13,7 +13,7 @@ sigmaV = p.sigmaV;                          % standard deviation for velocity re
 sigmaM = p.sigmaM;                          % standard deviation of measurement
 
 % grid
-N1 = p.N1; N2 = 100;
+N1 = p.N1; N2 = p.N2;
 L1 = p.L1; L2 = p.L2;
 x1 = linspace(-L1/2,L1/2-L1/N1,N1).'; x1(abs(x1)<1e-10) = 0;
 x2 = linspace(-L2/2,L2/2-L2/N2,N2); x2(abs(x2)<1e-10) = 0;
@@ -126,7 +126,7 @@ for nt = 2:Nt
         y(n1,:,nt) = (expACont(:,:,n1)*y(n1,:,nt-1).').';
     end
 
-    fx(:,:,nt) = ifftn(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
+    fx(:,:,nt) = ifft2(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
     
     temp = fx(:,:,nt);
     temp(fx(:,:,nt)<3e-3) = 0;
