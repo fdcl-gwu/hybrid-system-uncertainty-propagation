@@ -14,7 +14,7 @@ if model == 1
     p.sigmaL = 0.5;
     p.kL = 15;
     
-    p.nSample = 100000;
+    p.nSample = 1000000;
 
     % grid
     p.N1 = 100;

@@ -1,7 +1,8 @@
-function [ fx, xTrue, xEst ] = estimateSingle(  )
+function [ fx, xTrue, xEst ] = estimateSplitting(  )
 close all;
-rng('shuffle');
+rng(4);
 addpath('..','..\..\lib');
+tic;
 
 p = getParameter(1);
 % parameters
@@ -23,7 +24,7 @@ t = linspace(0,Lt,Nt);
 
 % initial knowledge
 fx = zeros(N1,N2,Nt);
-fx(:,:,1) = 1/L1/L2;
+fx(x1>=0,:,1) = 1/(L1/2)/L2;
 
 % initial fft
 shift1 = (-1).^((0:N1-1)-floor(N1/2)).';
@@ -35,6 +36,9 @@ y(:,:,1) = shift1.*shift2.*y(:,:,1);
 % true state
 xTrue = generateSample(1,p);
 xTrue = reshape(xTrue,2,Nt)';
+
+% measurement
+xMea = randn(Nt,1)*sigmaM+xTrue;
 
 % likelihood function
 l = @(h,x1) 1/sqrt(2*pi)/sigmaM*exp(-(x1-h).^2/2/sigmaM^2);
@@ -86,7 +90,7 @@ clear ACont;
 % transition kernal and rate
 lamda = zeros(N1,N2);
 lamda(x1<0,x2<0) = 100;
-lamda(x1==0,x2<0) = 30;
+lamda(x1==0,x2<0) = 100;
 kai = zeros(N1,N2,N1,N2);
 for n1 = 1:N1
     for n2 = 1:N2
@@ -135,7 +139,7 @@ for nt = 2:Nt
     fx(:,:,nt) = reshape(expADist*reshape(fx(:,:,nt),[],1),N1,N2);
     
     % measurement update
-    lx = repmat(l(xTrue(nt,1),x1),1,N2);
+    lx = repmat(l(xMea(nt),x1),1,N2);
     fx(:,:,nt) = fx(:,:,nt).*lx;
     fx(:,:,nt) = fx(:,:,nt)/(sum(sum(fx(:,:,nt)*L1*L2/N1/N2)));
     
@@ -148,6 +152,8 @@ for nt = 2:Nt
     xEst(nt,:) = [x1(index1),x2(index2)];
 end
 
+simulT = toc;
+
 % plot
 for nt = 1:4:Nt
     figure; hold on;
@@ -157,7 +163,7 @@ for nt = 1:4:Nt
     view([0,0,1]);
 end
 
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimate.mat'),'fx','xTrue','xEst');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting.mat'),'fx','xTrue','xEst','xMea','p','simulT');
 
 rmpath('..','..\..\lib');
 

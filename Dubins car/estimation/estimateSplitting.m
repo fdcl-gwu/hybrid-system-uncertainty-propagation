@@ -1,7 +1,8 @@
-function [ fx, xTrue, xEst ] = estimateSingle(  )
+function [ fx, xTrue, xEst ] = estimateSplitting(  )
 close all;
-rng('shuffle');
+rng(10);
 addpath('..','..\..\lib');
+tic;
 
 p = getParameter(1);
 % parameters
@@ -43,14 +44,15 @@ end
 
 % true state
 xTrue = generateSample(1);
-addpath('..','..\..\lib');
 xTrue = reshape(xTrue,4,Nt)';
 
-% likelihood function and true measurement
+% likelihood function and measurement
 l = @(d,alpha,x1,x2) (1/sqrt(2*pi)/sigmaL)*exp(-(sqrt((x1-xL1)^2+(x2-xL2)^2)-d)^2/2/sigmaL^2) * ...
     (1/(2*pi*besseli(0,kL)))*exp(kL*cos(alpha-atan2(x2-xL2,x1-xL1)));
-dTrue = sqrt((xTrue(:,1)-xL1).^2+(xTrue(:,2)-xL2).^2);
-alphaTrue = atan2(xTrue(:,2)-xL2,xTrue(:,1)-xL1);
+xMea(:,1) = randn(Nt,1)*sigmaL+sqrt((xTrue(:,1)-xL1).^2+(xTrue(:,2)-xL2).^2);
+for nt = 1:Nt
+    xMea(nt,2) = vmrnd(atan2(xTrue(nt,2)-xL2,xTrue(nt,1)-xL1),kL,1);
+end
 
 % Fourier transfor for sin(theta) and cos(theta)
 ysin = fftshift(fft(sin(x3)))/N3;
@@ -83,7 +85,7 @@ for s = 1:3
 end
 
 expACont = zeros(N3,N3,N1,N2,3);
-parfor s = 1:3
+for s = 1:3
     for n1 = 1:N1
         for n2 = 1:N2
             expACont(:,:,n1,n2,s) = expm(ACont(:,:,n1,n2,s)*Lt/(Nt-1));
@@ -107,7 +109,7 @@ for n2 = 1:N2
 end
 
 expADist = cell(N1,N2,N3);
-parfor n1 = 1:N1
+for n1 = 1:N1
     for n2 = 1:N2
         for n3 = 1:N3
             t1 = wrapToPi(theta(n1,n2,1)-x3(n3))<0 && wrapToPi(theta(n1,n2,1)-x3(n3))>=-pi;
@@ -150,7 +152,7 @@ for nt = 2:Nt
     lx = zeros(N1,N2,N3,3);
     for n1 = 1:N1
         for n2 = 1:N2
-            lx(n1,n2,:,:) = l(dTrue(nt),alphaTrue(nt),x1(n1),x2(n2));
+            lx(n1,n2,:,:) = l(xMea(nt,1),xMea(nt,2),x1(n1),x2(n2));
         end
     end
     
@@ -170,6 +172,8 @@ for nt = 2:Nt
     [~,xEst(nt,4)] = max(reshape(sum(sum(sum(fx(:,:,:,:,nt),3),2),1)*L1/N1*L2/N2*(2*pi)/N3,3,1));
 end
 
+simulT = toc;
+
 % plot
 for nt = 1:4:Nt
     figure;
@@ -186,7 +190,7 @@ for nt = 1:4:Nt
     view([0,0,1]);
 end
 
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSingle','.mat'),'fx','xTrue','xEst');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting','.mat'),'fx','xTrue','xEst','p','simulT');
 rmpath('..','..\..\lib');
 
 end

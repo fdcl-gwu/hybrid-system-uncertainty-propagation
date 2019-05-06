@@ -1,10 +1,11 @@
-function [ x ] = generateSample( n )
+function [ x ] = generateSample( n, p )
 
 close all;
-rng('shuffle');
-addpath('..','..\..\lib');
 
-p = getParameter(1);
+if ~exist('p','var')
+    p = getParameter(1);
+    addpath('..','..\..\lib');
+end
 % parameters
 v = p.v;
 u = p.u;
@@ -66,7 +67,7 @@ for nt = 2:Nt
     out = poissrnd(lamdaOut*dt);
 
     x(:,4,nt) = x(:,4,nt-1);
-    parfor ns = 1:nSample
+    for ns = 1:nSample
         timeIn1 = rand(1,in(ns,1));
         timeIn2 = rand(1,in(ns,2));
         timeIn3 = rand(1,in(ns,3));
@@ -99,7 +100,9 @@ for nt = 2:Nt
     end
 end
 
-rmpath('..','..\..\lib');
+if ~exist('p','var')
+    rmpath('..','..\..\lib');
+end
 
 end
 

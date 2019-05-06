@@ -1,7 +1,7 @@
 function [fx] = hybridMC()
 
 close all;
-rng('shuffle');
+rng(1);
 addpath('..');
 tic;
 

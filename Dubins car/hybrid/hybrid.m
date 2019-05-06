@@ -2,6 +2,7 @@ function [ fx ] = hybrid(  )
 
 close all;
 addpath('..','..\..\lib');
+tic;
 
 p = getParameter(1);
 % parameters
@@ -77,7 +78,7 @@ for s = 1:3
 end
 
 expACont = zeros(N3,N3,N1,N2,3);
-parfor s = 1:3
+for s = 1:3
     for n1 = 1:N1
         for n2 = 1:N2
             expACont(:,:,n1,n2,s) = expm(ACont(:,:,n1,n2,s)*Lt/(Nt-1));
@@ -101,7 +102,7 @@ for n2 = 1:N2
 end
 
 expADist = cell(N1,N2,N3);
-parfor n1 = 1:N1
+for n1 = 1:N1
     for n2 = 1:N2
         for n3 = 1:N3
             t1 = wrapToPi(theta(n1,n2,1)-x3(n3))<0 && wrapToPi(theta(n1,n2,1)-x3(n3))>=-pi;
@@ -151,6 +152,8 @@ for nt = 2:Nt
     end
 end
 
+simulT = toc;
+
 % plot
 for nt = 1:4:Nt
     figure;
@@ -168,13 +171,7 @@ for nt = 1:4:Nt
 end
 
 % save data
-parameter.x1 = x1;
-parameter.x2 = x2;
-parameter.x3 = x3;
-parameter.t = t;
-parameter.xo1 = xo1;
-parameter.xo2 = xo2;
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'parameter','fx');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'p','fx','simulT');
 
 rmpath('..','..\..\lib');
 

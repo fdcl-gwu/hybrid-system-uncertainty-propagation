@@ -1,7 +1,6 @@
-function [ fx, x ] = hybridMC(  )
-
+function [ fx, xTrue, xEst ] = estimateMC(  )
 close all;
-rng(1);
+rng(10);
 addpath('..','..\..\lib');
 tic;
 
@@ -13,6 +12,10 @@ sigma = p.sigma;
 xo1 = p.xo1;
 xo2 = p.xo2;
 No = length(xo1);
+xL1 = p.xL1;
+xL2 = p.xL2;
+sigmaL = p.sigmaL;
+kL = p.kL;
 nSample = p.nSample;
 
 % grid
@@ -24,26 +27,29 @@ N3 = p.N3;
 x3 = linspace(-pi,pi-2*pi/N3,N3);
 Nt = p.Nt;
 Lt = p.Lt;
-t = linspace(0,Lt,Nt);
-dt = Lt/(Nt-1);
+t = linspace(0,Lt,Nt); dt = Lt/(Nt-1);
 
-% initial conditions
-x1_0 = p.x1_0; x2_0 = p.x2_0;
-sigma1_0 = p.sigma1_0; sigma2_0 = p.sigma2_0;
-x3_0 = p.x3_0;
-k_0 = p.k_0;
-s_0 = p.s_0;
+% true state
+xTrue = generateSample(1);
+xTrue = reshape(xTrue,4,Nt)';
 
-% draw samples from initial condition
+% likelihood function and true measurement
+l = @(d,alpha,x1,x2) (1/sqrt(2*pi)/sigmaL)*exp(-(sqrt((x1-xL1)^2+(x2-xL2)^2)-d)^2/2/sigmaL^2) * ...
+    (1/(2*pi*besseli(0,kL)))*exp(kL*cos(alpha-atan2(x2-xL2,x1-xL1)));
+xMea(:,1) = randn(Nt,1)*sigmaL+sqrt((xTrue(:,1)-xL1).^2+(xTrue(:,2)-xL2).^2);
+for nt = 1:Nt
+    xMea(nt,2) = vmrnd(atan2(xTrue(nt,2)-xL2,xTrue(nt,1)-xL1),kL,1);
+end
+
+% draw initial samples
 x = zeros(nSample,4,Nt);
-x(:,1,1) = normrnd(x1_0,sigma1_0,nSample,1);
-x(:,2,1) = normrnd(x2_0,sigma2_0,nSample,1);
-x(:,3,1) = vmrnd(x3_0,k_0,nSample);
-x(:,4,1) = ones(nSample,1)*s_0;
+x(:,:,1) = [rand(nSample,1)*L1-L1/2,rand(nSample,1)*L1-L1/2,rand(nSample,1)*2*pi,randi(3,nSample,1)];
 
-% propagate samples
+% propagation and estimation
+fx = zeros(N1,N2,N3,3,Nt);
+xEst = zeros(Nt,4);
 for nt = 2:Nt
-    % continuous
+    % continuous propagation
     Bt = randn(nSample,1);
     for ns = 1:nSample
         x(ns,3,nt) = x(ns,3,nt-1) + u(x(ns,4,nt-1))*dt + Bt(ns)*sigma*sqrt(dt);
@@ -51,7 +57,7 @@ for nt = 2:Nt
     x(:,1,nt) = x(:,1,nt-1) + v*dt*(sin(x(:,3,nt))-sin(x(:,3,nt-1)))./(x(:,3,nt)-x(:,3,nt-1));
     x(:,2,nt) = x(:,2,nt-1) - v*dt*(cos(x(:,3,nt))-cos(x(:,3,nt-1)))./(x(:,3,nt)-x(:,3,nt-1));
     
-    % discrete
+    % discrete propagation
     theta = atan2(xo2-x(:,2,nt),xo1-x(:,1,nt));
     dtheta = wrapToPi(theta-x(:,3,nt));
 
@@ -59,7 +65,6 @@ for nt = 2:Nt
     lamdaIn = lamda(:,1:3);
     lamdaOut = lamda(:,4);
 
-    % propagate samples
     in(:,1) = poissrnd(lamdaIn(:,1)*dt);
     in(:,2) = poissrnd(lamdaIn(:,2)*dt);
     in(:,3) = poissrnd(lamdaIn(:,3)*dt);
@@ -97,19 +102,36 @@ for nt = 2:Nt
             end
         end
     end
-end
-
-% convert sample to density
-fx = zeros(N1,N2,N3,3,Nt);
-for nt = 1:Nt
+    
+    % density
     for ns = 1:nSample
         [~,index1] = min(abs(x(ns,1,nt)-x1));
         [~,index2] = min(abs(x(ns,2,nt)-x2));
         [~,index3] = min(abs(wrapToPi(x(ns,3,nt)-x3)));
-        
         fx(index1,index2,index3,x(ns,4,nt),nt) = fx(index1,index2,index3,x(ns,4,nt),nt)+1;
     end
     fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/nSample*N1/L1*N2/L2*N3/(2*pi);
+    
+    % measurement update
+    lx = zeros(N1,N2,N3,3);
+    for n1 = 1:N1
+        for n2 = 1:N2
+            lx(n1,n2,:,:) = l(xMea(nt,1),xMea(nt,2),x1(n1),x2(n2));
+        end
+    end
+    
+    fx(:,:,:,:,nt) = fx(:,:,:,:,nt).*lx;
+    fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/(sum(sum(sum(sum(fx(:,:,:,:,nt)))))*L1/N1*L2/N2*(2*pi)/N3);
+    
+    % estimation
+    xEst(nt,1) = sum(x1'.*sum(sum(sum(fx(:,:,:,:,nt),4),3),2)*L2/N2*(2*pi)/N3)*L1/N1;
+    xEst(nt,2) = sum(x2'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),3),1),N2,1)*L1/N1*(2*pi)/N3)*L2/N2;
+    xEst(nt,3) = atan2(sum(sin(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3,...
+        sum(cos(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3);
+    [~,xEst(nt,4)] = max(reshape(sum(sum(sum(fx(:,:,:,:,nt),3),2),1)*L1/N1*L2/N2*(2*pi)/N3,3,1));
+    
+    % re-sampling
+    x(:,:,nt) = randpdfCar(x1,x2,x3,fx(:,:,:,:,nt),nSample);
 end
 
 simulT = toc;
@@ -130,10 +152,7 @@ for nt = 1:4:Nt
     view([0,0,1]);
 end
 
-% save data
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'p','fx','simulT');
-
-rmpath('..','..\..\lib');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateMC','.mat'),'fx','xTrue','xEst','p','simulT');
 
 end
 
