@@ -190,7 +190,7 @@ for nt = 1:4:Nt
     view([0,0,1]);
 end
 
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting','.mat'),'fx','xTrue','xEst','p','simulT');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting','.mat'),'fx','xTrue','xEst','xMea','p','simulT');
 rmpath('..','..\..\lib');
 
 end
