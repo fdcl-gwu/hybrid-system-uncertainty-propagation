@@ -12,7 +12,7 @@ if model == 1
     p.xL1 = 0;
     p.xL2 = -3;
     p.sigmaL = 0.5;
-    p.kL = 15;
+    p.kL = 30;
     
     p.nSample = 1000000;
 

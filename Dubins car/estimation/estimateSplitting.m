@@ -1,8 +1,8 @@
-function [ fx, xTrue, xEst ] = estimateSplitting(  )
+function [ xEst, fx, tTot, tIte, p ] = estimateSplitting( xMea )
 close all;
-rng(10);
 addpath('..','..\..\lib');
-tic;
+
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -42,17 +42,9 @@ for s = 1:3
     y(:,:,:,s) = y(:,:,:,s).*shift1.*shift2.*shift3;
 end
 
-% true state
-xTrue = generateSample(1);
-xTrue = reshape(xTrue,4,Nt)';
-
-% likelihood function and measurement
+% likelihood function
 l = @(d,alpha,x1,x2) (1/sqrt(2*pi)/sigmaL)*exp(-(sqrt((x1-xL1)^2+(x2-xL2)^2)-d)^2/2/sigmaL^2) * ...
     (1/(2*pi*besseli(0,kL)))*exp(kL*cos(alpha-atan2(x2-xL2,x1-xL1)));
-xMea(:,1) = randn(Nt,1)*sigmaL+sqrt((xTrue(:,1)-xL1).^2+(xTrue(:,2)-xL2).^2);
-for nt = 1:Nt
-    xMea(nt,2) = vmrnd(atan2(xTrue(nt,2)-xL2,xTrue(nt,1)-xL1),kL,1);
-end
 
 % Fourier transfor for sin(theta) and cos(theta)
 ysin = fftshift(fft(sin(x3)))/N3;
@@ -123,9 +115,15 @@ for n1 = 1:N1
     end
 end
 
-% estimation
+% pre-allocate memory
 xEst = zeros(Nt,4);
+xEst(1,4) = 1;
+tIte = zeros(Nt-1,1);
+
+% estimation
 for nt = 2:Nt
+    timerIte = tic;
+    
     % propagation
     for n1 = 1:N1
         for n2 = 1:N2
@@ -138,6 +136,11 @@ for nt = 2:Nt
     for s = 1:3
         fx(:,:,:,s,nt) = ifftn(ifftshift(y(:,:,:,s)./shift1./shift2./shift3*N1*N2*N3),'symmetric');
     end
+    
+%     temp = fx(:,:,:,:,nt);
+%     temp(fx(:,:,:,:,nt)<0) = 0;
+%     fx(:,:,:,:,nt) = temp;
+%     fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/(sum(sum(sum(sum(fx(:,:,:,:,nt)))))*L1/N1*L2/N2*(2*pi)/N3);
     
     for n1 = 1:N1
         for n2 = 1:N2
@@ -170,9 +173,11 @@ for nt = 2:Nt
     xEst(nt,3) = atan2(sum(sin(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3,...
         sum(cos(x3)'.*reshape(sum(sum(sum(fx(:,:,:,:,nt),4),2),1),N3,1)*L1/N1*L2/N2)*(2*pi)/N3);
     [~,xEst(nt,4)] = max(reshape(sum(sum(sum(fx(:,:,:,:,nt),3),2),1)*L1/N1*L2/N2*(2*pi)/N3,3,1));
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:4:Nt
@@ -190,7 +195,6 @@ for nt = 1:4:Nt
     view([0,0,1]);
 end
 
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting','.mat'),'fx','xTrue','xEst','xMea','p','simulT');
 rmpath('..','..\..\lib');
 
 end

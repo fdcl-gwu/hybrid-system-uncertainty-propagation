@@ -1,10 +1,10 @@
-function [ x ] = generateSample( n, p )
+function [ x, xMea ] = generateSample( n, p )
 
+addpath('..','..\..\lib');
 close all;
 
 if ~exist('p','var')
     p = getParameter(1);
-    addpath('..','..\..\lib');
 end
 % parameters
 v = p.v;
@@ -13,6 +13,10 @@ sigma = p.sigma;
 xo1 = p.xo1;
 xo2 = p.xo2;
 No = length(xo1);
+xL1 = p.xL1;
+xL2 = p.xL2;
+sigmaL = p.sigmaL;
+kL = p.kL;
 nSample = n;
 
 % grid
@@ -40,6 +44,13 @@ x(:,1,1) = normrnd(x1_0,sigma1_0,nSample,1);
 x(:,2,1) = normrnd(x2_0,sigma2_0,nSample,1);
 x(:,3,1) = vmrnd(x3_0,k_0,nSample);
 x(:,4,1) = ones(nSample,1)*s_0;
+
+% initial measurement
+xMea = zeros(nSample,2,Nt);
+xMea(:,1,1) = sqrt((x(:,1,1)-xL1).^2+(x(:,2,1)-xL2).^2)+randn(nSample,1)*sigmaL;
+for ns = 1:nSample
+    xMea(ns,2,1) = vmrnd(atan2(x(ns,2,1)-xL2,x(ns,1,1)-xL1),kL,1);
+end
 
 % propagate samples
 for nt = 2:Nt
@@ -98,11 +109,15 @@ for nt = 2:Nt
             end
         end
     end
+    
+    % measurement
+    xMea(:,1,nt) = sqrt((x(:,1,nt)-xL1).^2+(x(:,2,nt)-xL2).^2)+randn(nSample,1)*sigmaL;
+    for ns = 1:nSample
+        xMea(ns,2,nt) = vmrnd(atan2(x(ns,2,nt)-xL2,x(ns,1,nt)-xL1),kL,1);
+    end
 end
 
-if ~exist('p','var')
-    rmpath('..','..\..\lib');
-end
+rmpath('..','..\..\lib');
 
 end
 

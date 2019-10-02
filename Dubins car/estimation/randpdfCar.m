@@ -20,25 +20,25 @@ for ns = 1:n
     
     ind(ns,1) = ind(ns,1)*cdf1(end,:,:,ind4);
     ind1 = ind(ns,1)<cdf1(:,:,:,ind4) & ind(ns,1)>=cat(1,0,cdf1(1:end-1,:,:,ind4));
-    x(ns,1) = x1(ind1);
+    x(ns,1) = (rand(1)-0.5)*L1/N1+x1(ind1);
     
     ind(ns,2) = ind(ns,2)*cdf2(ind1,end,:,ind4);
     ind2 = ind(ns,2)<cdf2(ind1,:,:,ind4) & ind(ns,2)>=cat(2,0,cdf2(ind1,1:end-1,:,ind4));
-    x(ns,2) = x2(ind2);
+    x(ns,2) = (rand(1)-0.5)*L2/N2+x2(ind2);
     
     ind(ns,3) = ind(ns,3)*cdf3(ind1,ind2,end,ind4);
     ind3 = ind(ns,3)<cdf3(ind1,ind2,:,ind4) & ind(ns,3)>=cat(3,0,cdf3(ind1,ind2,1:end-1,ind4));
-    x(ns,3) = x3(ind3);
+    x(ns,3) = (rand(1)-0.5)*L3/N3+x3(ind3);
 end
 
-fxN = zeros(N1,N2,N3,3);
-for ns = 1:n
-    [~,index1] = min(abs(x(ns,1)-x1));
-    [~,index2] = min(abs(x(ns,2)-x2));
-    [~,index3] = min(abs(wrapToPi(x(ns,3)-x3)));
-    fxN(index1,index2,index3,x(ns,4)) = fxN(index1,index2,index3,x(ns,4))+1;
-end
-fxN = fxN/n*N1/L1*N2/L2*N3/(2*pi);
+% fxN = zeros(N1,N2,N3,3);
+% for ns = 1:n
+%     [~,index1] = min(abs(x(ns,1)-x1));
+%     [~,index2] = min(abs(x(ns,2)-x2));
+%     [~,index3] = min(abs(wrapToPi(x(ns,3)-x3)));
+%     fxN(index1,index2,index3,x(ns,4)) = fxN(index1,index2,index3,x(ns,4))+1;
+% end
+% fxN = fxN/n*N1/L1*N2/L2*N3/(2*pi);
 
 end
 
