@@ -1,8 +1,8 @@
-function [ fx, xTrue, xEst ] = estimateSplitting(  )
+function [ xEst, fx, tTot, tIte, p ] = estimateSplitting( xMea, xTrue )
 close all;
-rng(4);
 addpath('..','..\..\lib');
-tic;
+
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -32,13 +32,6 @@ shift2 = (-1).^((0:N2-1)-floor(N2/2));
 y = zeros(N1,N2,Nt);
 y(:,:,1) = fftshift(fft2(fx(:,:,1)))/N1/N2;
 y(:,:,1) = shift1.*shift2.*y(:,:,1);
-
-% true state
-xTrue = generateSample(1,p);
-xTrue = reshape(xTrue,2,Nt)';
-
-% measurement
-xMea = randn(Nt,1)*sigmaM+xTrue;
 
 % likelihood function
 l = @(h,x1) 1/sqrt(2*pi)/sigmaM*exp(-(x1-h).^2/2/sigmaM^2);
@@ -122,21 +115,28 @@ for n1 = 1:N1
 end
 expADist = expm(ADist*Lt/(Nt-1));
 
-% estimation
+% pre-allocate memory
 xEst = zeros(Nt,2);
+tIte = zeros(Nt-1,1);
+
+% estimation
 for nt = 2:Nt
+    if nt == 112
+        pause(0.1);
+    end
+    timerIte = tic;
+    
     % propagation
     for n1 = 1:N1
         y(n1,:,nt) = (expACont(:,:,n1)*y(n1,:,nt-1).').';
     end
 
     fx(:,:,nt) = ifft2(ifftshift(y(:,:,nt)./shift1./shift2*N1*n2),'symmetric');
+    fx(:,:,nt) = reshape(expADist*reshape(fx(:,:,nt),[],1),N1,N2);
     
     temp = fx(:,:,nt);
-    temp(fx(:,:,nt)<3e-3) = 0;
+    temp(fx(:,:,nt)<max(max(fx(:,:,nt)))/40) = 0;
     fx(:,:,nt) = temp;
-    
-    fx(:,:,nt) = reshape(expADist*reshape(fx(:,:,nt),[],1),N1,N2);
     
     % measurement update
     lx = repmat(l(xMea(nt),x1),1,N2);
@@ -150,9 +150,11 @@ for nt = 2:Nt
     [~,index1] = max(max(fx(:,:,nt),[],2),[],1);
     [~,index2] = max(max(fx(:,:,nt),[],1),[],2);
     xEst(nt,:) = [x1(index1),x2(index2)];
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:4:Nt
@@ -162,8 +164,6 @@ for nt = 1:4:Nt
     scatter3(xEst(nt,2),xEst(nt,1),max(max(fx(:,:,nt))),'MarkerFaceColor','b','MarkerEdgeColor','b');
     view([0,0,1]);
 end
-
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateSplitting.mat'),'fx','xTrue','xEst','xMea','p','simulT');
 
 rmpath('..','..\..\lib');
 

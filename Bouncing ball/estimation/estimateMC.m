@@ -1,8 +1,8 @@
-function [ fx, xTrue, xEst ] = estimateMC(  )
+function [ xEst, fx, tTot, tIte ] = estimateMC( xMea, xTrue )
 close all;
-rng(4);
 addpath('..','..\..\lib');
-tic;
+
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -23,13 +23,6 @@ Nt = p.Nt;
 Lt = p.Lt;
 t = linspace(0,Lt,Nt); dt = Lt/(Nt+1);
 
-% true state
-xTrue = generateSample(1,p);
-xTrue = reshape(xTrue,2,Nt)';
-
-% measurement
-xMea = randn(Nt,1)*sigmaM+xTrue;
-
 % likelihood function
 l = @(h,x1) 1/sqrt(2*pi)/sigmaM*exp(-(x1-h).^2/2/sigmaM^2);
 
@@ -37,10 +30,16 @@ l = @(h,x1) 1/sqrt(2*pi)/sigmaM*exp(-(x1-h).^2/2/sigmaM^2);
 x = zeros(nSample,2,Nt);
 x(:,:,1) = [rand(nSample,1)*L1/2,rand(nSample,1)*L2-L2/2];
 
-% propagation and estimation
+% pre-allocate memory
 fx = zeros(N1,N2,Nt);
+fx(x1>=0,:,1) = 1/(L1/2)/L2;
 xEst = zeros(Nt,2);
+tIte = zeros(Nt-1,1);
+
+% propagation and estimation
 for nt = 2:Nt
+    timerIte = tic;
+    
     % propagate samples
     Bt = randn(nSample,1);
     x(:,2,nt) = x(:,2,nt-1) - (g+niu*x(:,2,nt-1).*abs(x(:,2,nt-1)))*dt + sigmaNiu*x(:,2,nt-1).*abs(x(:,2,nt-1)).*Bt*sqrt(dt);
@@ -50,18 +49,17 @@ for nt = 2:Nt
     x(index,1,nt) = -x(index,1,nt);
     x(index,2,nt) = normrnd(-c*x(index,2,nt),sigmaV*ones(length(index),1));
     
+    % measurement update
+    w = 1/nSample.*l(xMea(nt),x(:,1,nt));
+    w = w/sum(w);
+    
     % density
     for ns = 1:nSample
         [~,index1] = min(abs(x(ns,1,nt)-x1));
         [~,index2] = min(abs(x(ns,2,nt)-x2));
-        fx(index1,index2,nt) = fx(index1,index2,nt)+1;
+        fx(index1,index2,nt) = fx(index1,index2,nt)+w(ns);
     end
-    fx(:,:,nt) = fx(:,:,nt)/nSample*N1*N2/L1/L2;
-    
-    % measurement update
-    lx = repmat(l(xMea(nt),x1),1,N2);
-    fx(:,:,nt) = fx(:,:,nt).*lx;
-    fx(:,:,nt) = fx(:,:,nt)/(sum(sum(fx(:,:,nt)*L1*L2/N1/N2)));
+    fx(:,:,nt) = fx(:,:,nt)/(L1/N1*L2/N2);
     
     % estimation
     [~,index1] = max(max(fx(:,:,nt),[],2),[],1);
@@ -70,9 +68,11 @@ for nt = 2:Nt
     
     % re-sampling
     x(:,:,nt) = randpdf2(x1,x2,fx(:,:,nt),nSample);
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:4:Nt
@@ -82,8 +82,6 @@ for nt = 1:4:Nt
     scatter3(xEst(nt,2),xEst(nt,1),max(max(fx(:,:,nt))),'MarkerFaceColor','b','MarkerEdgeColor','b');
     view([0,0,1]);
 end
-
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-estimateMC.mat'),'fx','xTrue','xEst','xMea','p','simulT');
 
 rmpath('..','..\..\lib');
 

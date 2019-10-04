@@ -1,6 +1,10 @@
 function [] = test()
 
-rng(1);
+parpool(16);
+parfor n = 1:16
+    rng(n);
+end
+
 N = 60;
 
 parfor n = 1:N
