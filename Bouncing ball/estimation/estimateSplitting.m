@@ -4,7 +4,7 @@ addpath('..','..\..\lib');
 
 timerTot = tic;
 
-p = getParameter(1);
+p = getParameter(3);
 % parameters
 g = p.g;                                    % Gravity constant
 niu = p.niu;                                % Air drag coefficient

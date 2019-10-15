@@ -1,7 +1,7 @@
 function [] = test()
 
-parpool(16);
-parfor n = 1:16
+parpool(12);
+parfor n = 1:12
     rng(n);
 end
 
@@ -26,8 +26,8 @@ end
 function [] = parsave(n,xTrue,xMea,xEstS,fxS,tTotS,tIteS,p,xEstMC,fxMC,...
     tTotMC,tIteMC,xEstIMM,miuIMM,PIMM,tTotIMM,tIteIMM)
 
-save(strcat('D:\result-dubins car\10-2-2019\',num2str(n),'.mat'),...
-    'xTrue','xMea','fxS','xEstS','tTotS','tIteS','p','fxMC','xEstMC',...
+save(strcat('D:\result-dubins car\10-14-2019\',num2str(n),'.mat'),...
+    'xTrue','xMea','fxS','xEstS','tTotS','tIteS','p','xEstMC','fxMC',...
     'tTotMC','tIteMC','xEstIMM','miuIMM','PIMM','tTotIMM','tIteIMM','-v7.3');
 
 end

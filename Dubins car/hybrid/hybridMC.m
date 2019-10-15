@@ -56,47 +56,22 @@ for nt = 2:Nt
     dtheta = wrapToPi(theta-x(:,3,nt));
 
     lamda = getLamda(x(:,1,nt),x(:,2,nt),xo1,xo2);
-    lamdaIn = lamda(:,1:3);
-    lamdaOut = lamda(:,4);
-
-    % propagate samples
-    in(:,1) = poissrnd(lamdaIn(:,1)*dt);
-    in(:,2) = poissrnd(lamdaIn(:,2)*dt);
-    in(:,3) = poissrnd(lamdaIn(:,3)*dt);
-    out = poissrnd(lamdaOut*dt);
-
+    [ind2,~] = ind2sub([4,nSample],find(lamda'));
+    uni = rand(nSample,1);
+    
     x(:,4,nt) = x(:,4,nt-1);
-    for ns = 1:nSample
-        timeIn1 = rand(1,in(ns,1));
-        timeIn2 = rand(1,in(ns,2));
-        timeIn3 = rand(1,in(ns,3));
-        timeOut = rand(1,out(ns));
-        time = [timeIn1,timeIn2,timeIn3,timeOut
-            1*ones(1,length(timeIn1)),2*ones(1,length(timeIn2)),3*ones(1,length(timeIn3)),4*ones(1,length(timeOut))];
-        [~,ind] = sort(time(1,:));
-        time = time(:,ind);
-
-        if isempty(timeOut)
-            if x(ns,4,nt) == 1 && ~isempty(time)
-                if dtheta(ns,time(2,1))<0 && dtheta(ns,time(2,1))>=-pi
-                    x(ns,4,nt) = 2;
-                else
-                    x(ns,4,nt) = 3;
-                end
-            end
-        else
-            if time(2,end) == 4
-                x(ns,4,nt) = 1;
-            else
-                lastOutIndex = find(time(2,:)==4,1,'last');
-                if dtheta(ns,time(2,lastOutIndex+1))<0 && dtheta(ns,time(2,lastOutIndex+1))>=-pi
-                    x(ns,4,nt) = 2;
-                else
-                    x(ns,4,nt) = 3;
-                end
-            end
-        end
-    end
+    
+    indInPotent = find((x(:,4,nt-1)==1 & ind2~=4));
+    indIn = uni(indInPotent)>exp(-lamda(sub2ind([nSample,4],indInPotent,ind2(indInPotent)))*dt);
+    indIn = indInPotent(indIn);
+    ind1To2 = dtheta(sub2ind([nSample,3],indIn,ind2(indIn)))<0 & dtheta(sub2ind([nSample,3],indIn,ind2(indIn)))<0;
+    x(indIn(ind1To2),4,nt) = 2;
+    x(indIn(~ind1To2),4,nt) = 3;
+    
+    indOutPotent = find((x(:,4,nt-1)~=1 & ind2==4));
+    indOut = uni(indOutPotent)>exp(-lamda(indOutPotent,4)*dt);
+    indOut = indOutPotent(indOut);
+    x(indOut,4,nt) = 1;
 end
 
 % convert sample to density

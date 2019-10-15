@@ -4,7 +4,7 @@ addpath('..','..\..\lib');
 
 timerTot = tic;
 
-p = getParameter(1);
+p = getParameter(3);
 % parameters
 g = p.g;                                    % Gravity constant
 niu = p.niu;                                % Air drag coefficient
@@ -67,7 +67,7 @@ for nt = 2:Nt
     xEst(nt,:) = [x1(index1),x2(index2)];
     
     % re-sampling
-    x(:,:,nt) = randpdf2(x1,x2,fx(:,:,nt),nSample);
+    x(:,:,nt) = resample(x(:,:,nt),w,nSample);
     
     tIte(nt-1) = toc(timerIte);
 end
