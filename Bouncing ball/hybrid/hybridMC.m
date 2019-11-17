@@ -3,7 +3,7 @@ function [fx] = hybridMC()
 close all;
 rng(1);
 addpath('..');
-tic;
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -31,50 +31,56 @@ x = zeros(nSample,2,Nt);
 % draw samples from initial density
 x(:,:,1) = mvnrnd(x0,sigma0,nSample);
 
-% sample propagation
-for i = 2:Nt
-    Bt = randn(nSample,1);
-    x(:,2,i) = x(:,2,i-1) - (g+niu*x(:,2,i-1).*abs(x(:,2,i-1)))*dt + sigmaNiu*x(:,2,i-1).*abs(x(:,2,i-1)).*Bt*sqrt(dt);
-    x(:,1,i) = x(:,1,i-1) + (x(:,2,i)+x(:,2,i-1))/2*dt;
-    
-    index = find(x(:,1,i)<0);
-    x(index,1,i) = -x(index,1,i);
-    x(index,2,i) = normrnd(-c*x(index,2,i),sigmaV*ones(length(index),1));
-end
-
-% density approximation
+% pre-allocate memory
 fx = zeros(N1,N2,Nt);
-for i = 1:Nt
-    for j = 1:nSample
-        [~,index1] = min(abs(x(j,1,i)-x1));
-        [~,index2] = min(abs(x(j,2,i)-x2));
+tIte = zeros(Nt-1,1);
+
+% recover initial density
+for ns = 1:nSample
+    [~,index1] = min(abs(x(ns,1,1)-x1));
+    [~,index2] = min(abs(x(ns,2,1)-x2));
+
+    fx(index1,index2,1) = fx(index1,index2,1)+1;
+end
+fx(:,:,1) = fx(:,:,1)/nSample*N1*N2/L1/L2;
+
+% sample propagation
+for nt = 2:Nt
+    timerIte = tic;
+    
+    % continuous propagation
+    Bt = randn(nSample,1);
+    x(:,2,nt) = x(:,2,nt-1) - (g+niu*x(:,2,nt-1).*abs(x(:,2,nt-1)))*dt + sigmaNiu*x(:,2,nt-1).*abs(x(:,2,nt-1)).*Bt*sqrt(dt);
+    x(:,1,nt) = x(:,1,nt-1) + (x(:,2,nt)+x(:,2,nt-1))/2*dt;
+    
+    % discrete propagation
+    index = find(x(:,1,nt)<0);
+    x(index,1,nt) = -x(index,1,nt);
+    x(index,2,nt) = normrnd(-c*x(index,2,nt),sigmaV*ones(length(index),1));
+    
+    % recover density
+    for ns = 1:nSample
+        [~,index1] = min(abs(x(ns,1,nt)-x1));
+        [~,index2] = min(abs(x(ns,2,nt)-x2));
         
-        fx(index1,index2,i) = fx(index1,index2,i)+1;
+        fx(index1,index2,nt) = fx(index1,index2,nt)+1;
     end
-    fx(:,:,i) = fx(:,:,i)/nSample*N1*N2/L1/L2;
-    fprintf(strcat(num2str(i),'th iteration finished\n'));
+    fx(:,:,nt) = fx(:,:,nt)/nSample*N1*N2/L1/L2;
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
-for i = 1:Nt
+for nt = 1:Nt
     figure;
-    surf(x2,x1,fx(:,:,i));
+    surf(x2,x1,fx(:,:,nt));
     view([0,0,1]);
 end
 
 % save data
-parameter.g = g;
-parameter.niu = niu;
-parameter.sigmaNiu = sigmaNiu;
-parameter.c = c;
-parameter.sigmaV = sigmaV;
-parameter.x0 = x0;
-parameter.sigma0 = sigma0;
-parameter.nSample = nSample;
-
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','x','fx','simulT','-v7.3');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'p','x','fx','tTot','tIte','-v7.3');
 
 rmpath('..');
 

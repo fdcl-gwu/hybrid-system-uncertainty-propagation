@@ -2,7 +2,7 @@ function [ fx ] = hybrid(  )
 
 close all;
 addpath('..','..\..\lib');
-tic;
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -116,8 +116,13 @@ for n1 = 1:N1
     end
 end
 
+% pre-allocate memory
+tIte = zeros(Nt-1,1);
+
 % propagation
 for nt = 2:Nt
+    timerIte = tic;
+    
     % continuous
     for n1 = 1:N1
         for n2 = 1:N2
@@ -150,9 +155,11 @@ for nt = 2:Nt
         y(:,:,:,s) = fftshift(fftn(fx(:,:,:,s,nt)))/N1/N2/N3;
         y(:,:,:,s) = y(:,:,:,s).*shift1.*shift2.*shift3;
     end
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:4:Nt
@@ -171,7 +178,7 @@ for nt = 1:4:Nt
 end
 
 % save data
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'p','fx','simulT');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-splitting','.mat'),'p','fx','tTot','tIte');
 
 rmpath('..','..\..\lib');
 

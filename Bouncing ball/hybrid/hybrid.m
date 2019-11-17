@@ -1,8 +1,8 @@
-function [fx] = hybrid()
+function [ fx ] = hybrid()
 
 close all;
 addpath('..','..\..\lib');
-tic;
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -119,7 +119,10 @@ end
 expADist = expm(ADist*Lt/(Nt-1));
 
 % propagation
+tIte = zeros(Nt-1,1);
 for nt = 2:Nt
+    timerIte = tic;
+    
     % continuous part
     % Fourier coefficient propagation
     for n1 = 1:N1
@@ -142,10 +145,10 @@ for nt = 2:Nt
     y(:,:,nt) = fftshift(fft2(fx(:,:,nt)))/N1/N2;
     y(:,:,nt) = shift1.*shift2.*y(:,:,nt);
     
-    fprintf(strcat(num2str(nt),'th iteration finished\n'));
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:Nt
@@ -155,15 +158,7 @@ for nt = 1:Nt
 end
 
 % save data
-parameter.g = g;
-parameter.niu = niu;
-parameter.sigmaNiu = sigmaNiu;
-parameter.c = c;
-parameter.sigmaV = sigmaV;
-parameter.x0 = x0;
-parameter.sigma0 = sigma0;
-
-save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'parameter','x1','x2','t','y','fx','simulT');
+save(strcat('D:\result-bouncing ball\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'.mat'),'p','y','fx','tTot','tIte');
 
 rmpath('..','..\..\lib');
 

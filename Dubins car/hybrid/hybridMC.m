@@ -3,7 +3,7 @@ function [ fx, x ] = hybridMC(  )
 close all;
 rng(1);
 addpath('..','..\..\lib');
-tic;
+timerTot = tic;
 
 p = getParameter(1);
 % parameters
@@ -41,8 +41,24 @@ x(:,2,1) = normrnd(x2_0,sigma2_0,nSample,1);
 x(:,3,1) = vmrnd(x3_0,k_0,nSample);
 x(:,4,1) = ones(nSample,1)*s_0;
 
+% pre-allocate memory
+fx = zeros(N1,N2,N3,3,Nt);
+tIte = zeros(Nt-1,1);
+
+% recover initial density
+for ns = 1:nSample
+    [~,index1] = min(abs(x(ns,1,1)-x1));
+    [~,index2] = min(abs(x(ns,2,1)-x2));
+    [~,index3] = min(abs(wrapToPi(x(ns,3,1)-x3)));
+
+    fx(index1,index2,index3,x(ns,4,1),1) = fx(index1,index2,index3,x(ns,4,1),1)+1;
+end
+fx(:,:,:,:,1) = fx(:,:,:,:,1)/nSample*N1/L1*N2/L2*N3/(2*pi);
+
 % propagate samples
 for nt = 2:Nt
+    timerIte = tic;
+    
     % continuous
     Bt = randn(nSample,1);
     for ns = 1:nSample
@@ -72,11 +88,8 @@ for nt = 2:Nt
     indOut = uni(indOutPotent)>exp(-lamda(indOutPotent,4)*dt);
     indOut = indOutPotent(indOut);
     x(indOut,4,nt) = 1;
-end
-
-% convert sample to density
-fx = zeros(N1,N2,N3,3,Nt);
-for nt = 1:Nt
+    
+    % recover density
     for ns = 1:nSample
         [~,index1] = min(abs(x(ns,1,nt)-x1));
         [~,index2] = min(abs(x(ns,2,nt)-x2));
@@ -85,9 +98,11 @@ for nt = 1:Nt
         fx(index1,index2,index3,x(ns,4,nt),nt) = fx(index1,index2,index3,x(ns,4,nt),nt)+1;
     end
     fx(:,:,:,:,nt) = fx(:,:,:,:,nt)/nSample*N1/L1*N2/L2*N3/(2*pi);
+    
+    tIte(nt-1) = toc(timerIte);
 end
 
-simulT = toc;
+tTot = toc(timerTot);
 
 % plot
 for nt = 1:4:Nt
@@ -106,7 +121,7 @@ for nt = 1:4:Nt
 end
 
 % save data
-save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'p','fx','simulT');
+save(strcat('D:\result-dubins car\',sprintf('%i-%i-%i-%i-%i-%i',round(clock)),'-MC','.mat'),'p','fx','tTot','tIte');
 
 rmpath('..','..\..\lib');
 
