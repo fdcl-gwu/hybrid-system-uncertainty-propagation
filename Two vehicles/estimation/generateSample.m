@@ -10,18 +10,18 @@ b = 15;
 nSample = n;
 
 % grid
-Nt = 401;
+Nt = 40001;
 Lt = 40;
 dt = Lt/(Nt-1);
 
 % initial conditions
-x1_0 = 220; x2_0 = 0;
+x1_0 = 220; x2_0 = -100;
 s_0 = 1;
 
 % initial measurement
 xMea = zeros(2,Nt,nSample);
-xMea(1,1,:) = atan2(x2_0,x1_0+9260) + 0.028*sqrt(dt)*randn(1,1,nSample);
-xMea(2,1,:) = sqrt((x1_0+9260)^2+x2_0^2) + 40*sqrt(dt)*randn(1,1,nSample);
+xMea(1,1,:) = atan2(x2_0,x1_0+9260) + 0.028*sqrt(0.1)*randn(1,1,nSample);
+xMea(2,1,:) = sqrt((x1_0+9260)^2+x2_0^2) + 40*sqrt(0.1)*randn(1,1,nSample);
 
 % pre-allocate memory
 x = zeros(3,Nt,nSample);
@@ -51,33 +51,28 @@ for nt = 2:Nt
         end
     end
     
-    % discrete    
-    h2c = poissrnd(lamda(1,:)*dt);
-    c2h = poissrnd(lamda(2,:)*dt);
-    
+    % discrete
+    x(3,nt,:) = x(3,nt-1,:);
     for ns = 1:nSample
-        timeh2c = rand(1,h2c(ns));
-        timec2h = rand(1,c2h(ns));
-        
-        if isempty(timeh2c) && isempty(timec2h)
-            x(3,nt,ns) = x(3,nt-1,ns);
-        elseif isempty(timeh2c)
-            x(3,nt,ns) = 1;
-        elseif isempty(timec2h)
-            x(3,nt,ns) = 2;
-        else
-            if max(timeh2c)>max(timec2h)
+        if x(3,nt-1,ns)==1
+            if rand > exp(-lamda(1,ns)*dt)
                 x(3,nt,ns) = 2;
-            else
+            end
+        else
+            if rand > exp(-lamda(2,ns)*dt)
                 x(3,nt,ns) = 1;
             end
-        end 
+        end
     end
     
     % measurement
-    xMea(1,nt,:) = atan2(x(2,nt,:),x(1,nt,:)+9260) + 0.028*sqrt(dt)*randn(1,1,nSample);
-    xMea(2,nt,:) = sqrt((x(1,nt,:)+9260).^2+x(2,nt,:).^2) + 40*sqrt(dt)*randn(1,1,nSample);
+    xMea(1,nt,:) = atan2(x(2,nt,:),x(1,nt,:)+9260) + 0.028*sqrt(0.1)*randn(1,1,nSample);
+    xMea(2,nt,:) = sqrt((x(1,nt,:)+9260).^2+x(2,nt,:).^2) + 40*sqrt(0.1)*randn(1,1,nSample);
 end
+
+% down sampling
+x = x(:,1:100:40001);
+xMea = xMea(:,1:100:40001);
 
 rmpath('..','..\..\lib');
 

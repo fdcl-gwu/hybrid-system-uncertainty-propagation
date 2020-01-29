@@ -20,9 +20,15 @@ Nt = 401;
 Lt = 40;
 t = linspace(0,Lt,Nt);
 
+% initial conditions
+x1_0 = 220; x2_0 = -100;
+sigma1_0 = 10; sigma2_0 = 10;
+s_0 = 1;
+
 % initial knowledge
 fx = zeros(N1,N2,2,Nt);
-fx(:,:,:,1) = 1/L1/L2/2;
+fx(:,:,s_0,1) = 1/(sqrt(2*pi)*sigma1_0)*exp(-0.5*(reshape(x1,[],1)-x1_0).^2/sigma1_0^2) .*...
+    (1/(sqrt(2*pi)*sigma2_0)*exp(-0.5*(reshape(x2,1,[])-x2_0).^2/sigma2_0^2));
 
 % Fourier transform of initial distribution
 y = zeros(N1,N2,2);
@@ -82,7 +88,7 @@ end
 
 % pre-allocate memory
 xEst = zeros(Nt,3);
-xEst(1,3) = 1;
+xEst(1,:) = [x1_0,x2_0,s_0];
 tIte = zeros(Nt-1,1);
 
 % estimation
@@ -101,6 +107,8 @@ for nt = 2:Nt
             fx(n1,n2,:,nt) = reshape(expB{n1,n2}*reshape(fx(n1,n2,:,nt),2,1,1),1,1,2);
         end
     end
+
+    fx(fx<0) = 0;
     
     % measurement update
     lx = zeros(N1,N2,2);
